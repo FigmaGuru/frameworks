@@ -1,0 +1,27 @@
+{
+  "name": "Tailwind Color Generator",
+  "id": "tailwind-color-generator",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "dev"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "permissions": [
+    "currentuser"
+  ],
+  "menu": [
+    {
+      "name": "Generate Tailwind Colors",
+      "command": "generate-colors"
+    },
+    {
+      "separator": true
+    },
+    {
+      "name": "Settings",
+      "command": "settings"
+    }
+  ]
+} 

@@ -1,0 +1,355 @@
+/** @type {import('tailwindcss').Config} */
+
+module.exports = {
+  content: [
+    "./src/**/*.{html,js,ts,jsx,tsx}",
+    "./example.html"
+  ],
+  theme: {
+    // 1. PRIMITIVE COLORS (like Figma base swatches)
+    colors: {
+      gray: {
+        50:  '#F9FAFB',
+        100: '#F3F4F6',
+        200: '#E5E7EB',
+        300: '#D1D5DB',
+        400: '#9CA3AF',
+        500: '#6B7280',
+        600: '#4B5563',
+        700: '#374151',
+        800: '#1F2937',
+        900: '#111827',
+      },
+      blue: {
+        50:  '#EFF6FF',
+        100: '#DBEAFE',
+        200: '#BFDBFE',
+        300: '#93C5FD',
+        400: '#60A5FA',
+        500: '#3B82F6',
+        600: '#2563EB',
+        700: '#1D4ED8',
+        800: '#1E40AF',
+        900: '#1E3A8A',
+      },
+      red: {
+        50:  '#FEF2F2',
+        100: '#FEE2E2',
+        200: '#FECACA',
+        300: '#FCA5A5',
+        400: '#F87171',
+        500: '#EF4444',
+        600: '#DC2626',
+        700: '#B91C1C',
+        800: '#991B1B',
+        900: '#7F1D1D',
+      },
+      dataviz: {
+        1:  '#3366CC',
+        2:  '#DC3912',
+        3:  '#FF9900',
+        4:  '#109618',
+        5:  '#990099',
+        6:  '#0099C6',
+        7:  '#DD4477',
+        8:  '#66AA00',
+        9:  '#B82E2E',
+        10: '#316395',
+        11: '#994499',
+        12: '#22AA99',
+        13: '#AAAA11',
+        14: '#6633CC',
+        15: '#E67300',
+        16: '#8B0707',
+        17: '#329262',
+        18: '#5574A6',
+        19: '#3B3EAC',
+        20: '#B77322',
+      },
+      green: {
+        50:  '#ECFDF5',
+        100: '#D1FAE5',
+        200: '#A7F3D0',
+        300: '#6EE7B7',
+        400: '#34D399',
+        500: '#10B981',
+        600: '#059669',
+        700: '#047857',
+        800: '#065F46',
+        900: '#064E3B',
+      },
+      yellow: {
+        50:  '#FFFBEB',
+        100: '#FEF3C7',
+        200: '#FDE68A',
+        300: '#FCD34D',
+        400: '#FBBF24',
+        500: '#F59E42',
+        600: '#D97706',
+        700: '#B45309',
+        800: '#92400E',
+        900: '#78350F',
+      },
+      purple: {
+        50:  '#F5F3FF',
+        100: '#EDE9FE',
+        200: '#DDD6FE',
+        300: '#C4B5FD',
+        400: '#A78BFA',
+        500: '#8B5CF6',
+        600: '#7C3AED',
+        700: '#6D28D9',
+        800: '#5B21B6',
+        900: '#4C1D95',
+      },
+      orange: {
+        50:  '#FFF7ED',
+        100: '#FFEDD5',
+        200: '#FED7AA',
+        300: '#FDBA74',
+        400: '#FB923C',
+        500: '#F97316',
+        600: '#EA580C',
+        700: '#C2410C',
+        800: '#9A3412',
+        900: '#7C2D12',
+      },
+      teal: {
+        50:  '#F0FDFA',
+        100: '#CCFBF1',
+        200: '#99F6E4',
+        300: '#5EEAD4',
+        400: '#2DD4BF',
+        500: '#14B8A6',
+        600: '#0D9488',
+        700: '#0F766E',
+        800: '#115E59',
+        900: '#134E4A',
+      },
+      // Add more primitives as needed
+    },
+    // 1b. DARK PRIMITIVES (for dark mode)
+    darkColors: {
+      gray: {
+        50:  '#181A1B',
+        100: '#23272A',
+        200: '#2C2F34',
+        300: '#35393F',
+        400: '#4B5563',
+        500: '#6B7280',
+        600: '#9CA3AF',
+        700: '#D1D5DB',
+        800: '#E5E7EB',
+        900: '#F9FAFB',
+      },
+      blue: {
+        50:  '#0A192F',
+        100: '#112240',
+        200: '#233554',
+        300: '#3A506B',
+        400: '#5BC0EB',
+        500: '#3B82F6',
+        600: '#2563EB',
+        700: '#1D4ED8',
+        800: '#1E40AF',
+        900: '#1E3A8A',
+      },
+      red: {
+        50:  '#2B1616',
+        100: '#3F1D1D',
+        200: '#5A2323',
+        300: '#7F1D1D',
+        400: '#991B1B',
+        500: '#B91C1C',
+        600: '#DC2626',
+        700: '#EF4444',
+        800: '#F87171',
+        900: '#FCA5A5',
+      },
+      dataviz: {
+        1:  '#4F83FF',
+        2:  '#FF5C5C',
+        3:  '#FFC266',
+        4:  '#34D399',
+        5:  '#C084FC',
+        6:  '#67E8F9',
+        7:  '#F472B6',
+        8:  '#A3E635',
+        9:  '#F87171',
+        10: '#60A5FA',
+        11: '#A78BFA',
+        12: '#5EEAD4',
+        13: '#FACC15',
+        14: '#818CF8',
+        15: '#FDBA74',
+        16: '#F87171',
+        17: '#34D399',
+        18: '#93C5FD',
+        19: '#818CF8',
+        20: '#F59E42',
+      },
+      green: {
+        50:  '#064E3B',
+        100: '#065F46',
+        200: '#047857',
+        300: '#059669',
+        400: '#10B981',
+        500: '#34D399',
+        600: '#6EE7B7',
+        700: '#A7F3D0',
+        800: '#D1FAE5',
+        900: '#ECFDF5',
+      },
+      yellow: {
+        50:  '#78350F',
+        100: '#92400E',
+        200: '#B45309',
+        300: '#D97706',
+        400: '#F59E42',
+        500: '#FBBF24',
+        600: '#FCD34D',
+        700: '#FDE68A',
+        800: '#FEF3C7',
+        900: '#FFFBEB',
+      },
+      purple: {
+        50:  '#4C1D95',
+        100: '#5B21B6',
+        200: '#6D28D9',
+        300: '#7C3AED',
+        400: '#8B5CF6',
+        500: '#A78BFA',
+        600: '#C4B5FD',
+        700: '#DDD6FE',
+        800: '#EDE9FE',
+        900: '#F5F3FF',
+      },
+      orange: {
+        50:  '#7C2D12',
+        100: '#9A3412',
+        200: '#C2410C',
+        300: '#EA580C',
+        400: '#F97316',
+        500: '#FB923C',
+        600: '#FDBA74',
+        700: '#FED7AA',
+        800: '#FFEDD5',
+        900: '#FFF7ED',
+      },
+      teal: {
+        50:  '#134E4A',
+        100: '#115E59',
+        200: '#0F766E',
+        300: '#0D9488',
+        400: '#14B8A6',
+        500: '#2DD4BF',
+        600: '#5EEAD4',
+        700: '#99F6E4',
+        800: '#CCFBF1',
+        900: '#F0FDFA',
+      },
+      // Add more dark primitives as needed
+    },
+    // 2. SEMANTIC TOKENS (maps to primitives for light/dark)
+    semantics: {
+      'bg-primary':   { light: 'gray-50',   dark: 'gray-900' },
+      'bg-secondary': { light: 'gray-100',  dark: 'gray-800' },
+      'text-primary': { light: 'gray-900',  dark: 'gray-50'  },
+      'text-secondary': { light: 'gray-600', dark: 'gray-300' },
+      'border-primary': { light: 'gray-200', dark: 'gray-700' },
+      'border-secondary': { light: 'gray-300', dark: 'gray-600' },
+      'dataviz-1':  { light: 'dataviz-1',  dark: 'dataviz-1'  },
+      'dataviz-2':  { light: 'dataviz-2',  dark: 'dataviz-2'  },
+      'dataviz-3':  { light: 'dataviz-3',  dark: 'dataviz-3'  },
+      'dataviz-4':  { light: 'dataviz-4',  dark: 'dataviz-4'  },
+      'dataviz-5':  { light: 'dataviz-5',  dark: 'dataviz-5'  },
+      'dataviz-6':  { light: 'dataviz-6',  dark: 'dataviz-6'  },
+      'dataviz-7':  { light: 'dataviz-7',  dark: 'dataviz-7'  },
+      'dataviz-8':  { light: 'dataviz-8',  dark: 'dataviz-8'  },
+      'dataviz-9':  { light: 'dataviz-9',  dark: 'dataviz-9'  },
+      'dataviz-10': { light: 'dataviz-10', dark: 'dataviz-10' },
+      'dataviz-11': { light: 'dataviz-11', dark: 'dataviz-11' },
+      'dataviz-12': { light: 'dataviz-12', dark: 'dataviz-12' },
+      'dataviz-13': { light: 'dataviz-13', dark: 'dataviz-13' },
+      'dataviz-14': { light: 'dataviz-14', dark: 'dataviz-14' },
+      'dataviz-15': { light: 'dataviz-15', dark: 'dataviz-15' },
+      'dataviz-16': { light: 'dataviz-16', dark: 'dataviz-16' },
+      'dataviz-17': { light: 'dataviz-17', dark: 'dataviz-17' },
+      'dataviz-18': { light: 'dataviz-18', dark: 'dataviz-18' },
+      'dataviz-19': { light: 'dataviz-19', dark: 'dataviz-19' },
+      'dataviz-20': { light: 'dataviz-20', dark: 'dataviz-20' },
+      // Alerts
+      'alert-success-bg':   { light: 'green-100',  dark: 'green-900' },
+      'alert-success-text': { light: 'green-800',  dark: 'green-100' },
+      'alert-warning-bg':   { light: 'yellow-100', dark: 'yellow-900' },
+      'alert-warning-text': { light: 'yellow-800', dark: 'yellow-100' },
+      'alert-error-bg':     { light: 'red-100',    dark: 'red-900' },
+      'alert-error-text':   { light: 'red-800',    dark: 'red-100' },
+      'alert-info-bg':      { light: 'blue-100',   dark: 'blue-900' },
+      'alert-info-text':    { light: 'blue-800',   dark: 'blue-100' },
+      // Badges
+      'badge-success-bg':   { light: 'green-200',  dark: 'green-700' },
+      'badge-warning-bg':   { light: 'yellow-200', dark: 'yellow-700' },
+      'badge-error-bg':     { light: 'red-200',    dark: 'red-700' },
+      'badge-info-bg':      { light: 'blue-200',   dark: 'blue-700' },
+      // Avatars
+      'avatar-bg':          { light: 'gray-200',   dark: 'gray-700' },
+      'avatar-border':      { light: 'gray-400',   dark: 'gray-600' },
+      // Cards
+      'card-bg':            { light: 'white',      dark: 'gray-900' },
+      'card-border':        { light: 'gray-200',   dark: 'gray-700' },
+      // Table
+      'table-row-even-bg':  { light: 'gray-50',    dark: 'gray-800' },
+      'table-row-odd-bg':   { light: 'gray-100',   dark: 'gray-700' },
+      // Navigation
+      'nav-bg':             { light: 'gray-100',   dark: 'gray-900' },
+      'nav-active-bg':      { light: 'blue-100',   dark: 'blue-900' },
+      'nav-hover-bg':       { light: 'gray-200',   dark: 'gray-800' },
+      'nav-disabled-bg':    { light: 'gray-300',   dark: 'gray-700' },
+      // Tooltip, Modal, Overlay, Skeleton
+      'tooltip-bg':         { light: 'gray-900',   dark: 'gray-100' },
+      'modal-bg':           { light: 'white',      dark: 'gray-900' },
+      'overlay-bg':         { light: 'gray-700',   dark: 'gray-900' },
+      'skeleton-bg':        { light: 'gray-200',   dark: 'gray-700' },
+      // Add more as needed
+    },
+    extend: {
+      colors: {
+        'bg-primary': 'var(--color-bg-primary)',
+        'bg-secondary': 'var(--color-bg-secondary)',
+        'text-primary': 'var(--color-text-primary)',
+        'text-secondary': 'var(--color-text-secondary)',
+        'border-primary': 'var(--color-border-primary)',
+        'border-secondary': 'var(--color-border-secondary)',
+        // Add more semantic tokens as needed
+      },
+    },
+  },
+  plugins: [
+    // require('./index.js')
+  ],
+}
+// 3. HOW TO USE LIGHT/DARK THEMES
+// In your global CSS (e.g., in ui.html or a CSS file), define the CSS variables for light and dark:
+//
+// :root {
+//   --color-bg-primary: #FFFFFF;
+//   --color-bg-secondary: #F3F4F6;
+//   --color-text-primary: #111827;
+//   --color-text-secondary: #6B7280;
+//   --color-border-primary: #E5E7EB;
+//   --color-border-secondary: #D1D5DB;
+// }
+// .dark {
+//   --color-bg-primary: #111827;
+//   --color-bg-secondary: #1F2937;
+//   --color-text-primary: #F9FAFB;
+//   --color-text-secondary: #9CA3AF;
+//   --color-border-primary: #374151;
+//   --color-border-secondary: #4B5563;
+// }
+//
+// Now, using Tailwind, you can do:
+// <div class="bg-bg-primary text-text-primary dark:bg-bg-primary dark:text-text-primary">...</div>
+//
+// This is like swapping Figma color styles for light/dark themes automatically! 

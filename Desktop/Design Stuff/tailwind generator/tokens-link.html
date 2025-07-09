@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Design Tokens Quick Access</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    button { font-size: 1.2rem; padding: 0.5rem 1.5rem; }
+    .copied { color: green; margin-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Design Tokens Quick Access</h1>
+  <button id="openBtn">Open tokens.json</button>
+  <button id="copyBtn">Copy URL</button>
+  <span id="copiedMsg" class="copied" style="display:none;">Copied!</span>
+  <script>
+    const tokenUrl = "https://raw.githubusercontent.com/FigmaGuru/tailwindgenerator/main/tokens.json";
+    document.getElementById('openBtn').onclick = () => {
+      window.open(tokenUrl, '_blank');
+    };
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(tokenUrl).then(() => {
+        document.getElementById('copiedMsg').style.display = 'inline';
+        setTimeout(() => {
+          document.getElementById('copiedMsg').style.display = 'none';
+        }, 1500);
+      });
+    };
+  </script>
+</body>
+</html> 

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind Color Generator - Example</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Load our plugin
+        tailwind.config = {
+            plugins: [
+                // This would normally be: require('tailwind-color-generator')
+                // For demo, we'll define the colors directly
+                function({ addUtilities, addBase }) {
+                    const primitiveColors = {
+                        'blue-500': '#3B82F6',
+                        'blue-600': '#2563EB', 
+                        'gray-100': '#F3F4F6',
+                        'gray-800': '#1F2937',
+                        'white': '#FFFFFF',
+                    }
+                    
+                    const semanticColors = {
+                        'primary': primitiveColors['blue-500'],
+                        'primary-dark': primitiveColors['blue-600'],
+                        'secondary': primitiveColors['gray-800'],
+                        'surface': primitiveColors['gray-100'],
+                        'background': primitiveColors['white'],
+                    }
+                    
+                    // Generate utilities
+                    const utilities = {}
+                    
+                    Object.entries(primitiveColors).forEach(([name, value]) => {
+                        utilities[`.bg-primitive-${name}`] = { backgroundColor: value }
+                        utilities[`.text-primitive-${name}`] = { color: value }
+                        utilities[`.border-primitive-${name}`] = { borderColor: value }
+                    })
+                    
+                    Object.entries(semanticColors).forEach(([name, value]) => {
+                        utilities[`.bg-${name}`] = { backgroundColor: value }
+                        utilities[`.text-${name}`] = { color: value }
+                        utilities[`.border-${name}`] = { borderColor: value }
+                    })
+                    
+                    addUtilities(utilities)
+                    
+                    // Add CSS variables
+                    addBase({
+                        ':root': {
+                            '--color-blue-500': primitiveColors['blue-500'],
+                            '--color-blue-600': primitiveColors['blue-600'],
+                            '--color-gray-100': primitiveColors['gray-100'],
+                            '--color-gray-800': primitiveColors['gray-800'],
+                            '--color-white': primitiveColors['white'],
+                            '--color-primary': semanticColors['primary'],
+                            '--color-primary-dark': semanticColors['primary-dark'],
+                            '--color-secondary': semanticColors['secondary'],
+                            '--color-surface': semanticColors['surface'],
+                            '--color-background': semanticColors['background'],
+                        }
+                    })
+                }
+            ]
+        }
+    </script>
+</head>
+<body class="bg-background p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-secondary mb-8">Tailwind Color Generator Demo</h1>
+        
+        <!-- Primitive Colors Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-secondary mb-6">Primitive Colors (Base Values)</h2>
+            <p class="text-gray-600 mb-4">These are your raw color values - like the hex codes you'd define in Figma color styles.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="font-medium">Background Colors</h3>
+                    <div class="space-y-2">
+                        <div class="bg-primitive-blue-500 p-4 rounded text-white">bg-primitive-blue-500</div>
+                        <div class="bg-primitive-blue-600 p-4 rounded text-white">bg-primitive-blue-600</div>
+                        <div class="bg-primitive-gray-100 p-4 rounded text-gray-800">bg-primitive-gray-100</div>
+                        <div class="bg-primitive-gray-800 p-4 rounded text-white">bg-primitive-gray-800</div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h3 class="font-medium">Text Colors</h3>
+                    <div class="space-y-2">
+                        <p class="text-primitive-blue-500">text-primitive-blue-500</p>
+                        <p class="text-primitive-blue-600">text-primitive-blue-600</p>
+                        <p class="text-primitive-gray-800">text-primitive-gray-800</p>
+                        <p class="text-primitive-gray-100 bg-gray-800 p-2 rounded">text-primitive-gray-100 (on dark bg)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Semantic Colors Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-secondary mb-6">Semantic Colors (Component Tokens)</h2>
+            <p class="text-gray-600 mb-4">These reference the primitives - like component styles in Figma that use your color tokens.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="font-medium">Background Colors</h3>
+                    <div class="space-y-2">
+                        <div class="bg-primary p-4 rounded text-white">bg-primary</div>
+                        <div class="bg-primary-dark p-4 rounded text-white">bg-primary-dark</div>
+                        <div class="bg-surface p-4 rounded text-gray-800 border">bg-surface</div>
+                        <div class="bg-secondary p-4 rounded text-white">bg-secondary</div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h3 class="font-medium">Text Colors</h3>
+                    <div class="space-y-2">
+                        <p class="text-primary">text-primary</p>
+                        <p class="text-primary-dark">text-primary-dark</p>
+                        <p class="text-secondary">text-secondary</p>
+                        <p class="text-surface bg-gray-800 p-2 rounded">text-surface (on dark bg)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Real-world Example -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-secondary mb-6">Real-world Example</h2>
+            <p class="text-gray-600 mb-4">How you'd use these in actual components:</p>
+            
+            <div class="bg-surface p-6 rounded-lg border">
+                <h3 class="text-secondary text-xl font-semibold mb-4">Card Component</h3>
+                <p class="text-gray-600 mb-4">This card uses semantic colors for consistent theming.</p>
+                
+                <div class="space-x-4">
+                    <button class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors">
+                        Primary Button
+                    </button>
+                    <button class="bg-secondary text-white px-4 py-2 rounded hover:opacity-90 transition-opacity">
+                        Secondary Button
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- CSS Variables -->
+        <section>
+            <h2 class="text-2xl font-semibold text-secondary mb-6">CSS Custom Properties</h2>
+            <p class="text-gray-600 mb-4">The plugin also generates CSS variables for easy reference:</p>
+            
+            <div class="bg-gray-100 p-4 rounded font-mono text-sm">
+                <pre><code>:root {
+  /* Primitive tokens */
+  --color-blue-500: #3B82F6;
+  --color-blue-600: #2563EB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-800: #1F2937;
+  --color-white: #FFFFFF;
+  
+  /* Semantic tokens */
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-secondary: #1F2937;
+  --color-surface: #F3F4F6;
+  --color-background: #FFFFFF;
+}</code></pre>
+            </div>
+        </section>
+    </div>
+</body>
+</html> 

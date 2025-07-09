@@ -1,0 +1,24 @@
+{
+  "name": "tailwind-color-generator",
+  "version": "1.0.0",
+  "description": "A simple Tailwind CSS plugin for generating primitive and semantic color tokens",
+  "main": "index.js",
+  "scripts": {
+    "generate:primitives": "node generate-primitives-css.js"
+  },
+  "keywords": [
+    "tailwindcss",
+    "plugin",
+    "colors",
+    "design-tokens",
+    "css"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "peerDependencies": {
+    "tailwindcss": "^3.0.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.3.0"
+  }
+} 

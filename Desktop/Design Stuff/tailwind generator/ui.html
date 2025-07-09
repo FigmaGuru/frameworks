@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #ffffff;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 100%;
+    }
+    
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+    
+    .description {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    
+    .button {
+      background: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 16px;
+      transition: background-color 0.2s;
+    }
+    
+    .button:hover {
+      background: #0d8ce0;
+    }
+    
+    .button:disabled {
+      background: #e5e5e5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .color-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .color-swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      border: 1px solid #e5e5e5;
+      margin-bottom: 4px;
+    }
+    
+    .color-name {
+      font-size: 11px;
+      color: #666;
+      word-break: break-all;
+    }
+    
+    .code-output {
+      background: #f5f5f5;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .copy-button {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .copy-button:hover {
+      background: #e5e5e5;
+    }
+    
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .success {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .loading {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tailwind Color Generator</h1>
+    <div class="description">
+      Extract color styles from your Figma file and generate Tailwind CSS color tokens (primitives and semantics).
+    </div>
+    
+    <button id="generateBtn" class="button">Generate Color Tokens</button>
+    <button id="syncBtn" class="button" style="background:#34d399;">Sync Tokens from GitHub</button>
+    <div id="tokenSection" class="section hidden">
+      <div class="section-title">Apply Token to Selection</div>
+      <select id="tokenDropdown" style="width:100%;padding:8px 4px;margin-bottom:8px;"></select>
+      <button id="applyTokenBtn" class="button" style="background:#6366f1;">Apply Token</button>
+    </div>
+    
+    <div id="errorMessage" class="error hidden"></div>
+    <div id="successMessage" class="success hidden"></div>
+    
+    <div id="loadingMessage" class="loading hidden">
+      Analyzing your Figma styles...
+    </div>
+    
+    <div id="results" class="hidden">
+      <div class="section">
+        <div class="section-title">Primitive Colors (Base Values)</div>
+        <div id="primitiveColors" class="color-grid"></div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Semantic Colors (Component Tokens)</div>
+        <div id="semanticColors" class="color-grid"></div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Generated Tailwind Plugin Code</div>
+        <div id="codeOutput" class="code-output"></div>
+        <button id="copyBtn" class="copy-button">Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Handle button clicks
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      generateColors();
+    });
+    
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      copyToClipboard();
+    });
+    
+    // Listen for messages from the plugin code
+    window.onmessage = async (event) => {
+      const message = event.data.pluginMessage;
+      
+      if (!message) return;
+      
+      switch (message.type) {
+        case 'generated-code':
+          showResults(message);
+          break;
+        case 'error':
+          showError(message.message);
+          break;
+        case 'show-settings':
+          showSettings();
+          break;
+      }
+    };
+    
+    function generateColors() {
+      // Show loading state
+      document.getElementById('loadingMessage').classList.remove('hidden');
+      document.getElementById('results').classList.add('hidden');
+      document.getElementById('errorMessage').classList.add('hidden');
+      document.getElementById('successMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = true;
+      
+      // Send message to plugin code
+      parent.postMessage({ pluginMessage: { type: 'generate-colors' } }, '*');
+    }
+    
+    function showResults(message) {
+      // Hide loading state
+      document.getElementById('loadingMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = false;
+      
+      // Display primitive colors
+      const primitiveContainer = document.getElementById('primitiveColors');
+      primitiveContainer.innerHTML = '';
+      
+      Object.entries(message.primitiveColors).forEach(([name, value]) => {
+        const colorItem = createColorItem(name, value);
+        primitiveContainer.appendChild(colorItem);
+      });
+      
+      // Display semantic colors
+      const semanticContainer = document.getElementById('semanticColors');
+      semanticContainer.innerHTML = '';
+      
+      Object.entries(message.semanticColors).forEach(([name, value]) => {
+        const colorItem = createColorItem(name, value);
+        semanticContainer.appendChild(colorItem);
+      });
+      
+      // Display generated code
+      document.getElementById('codeOutput').textContent = message.code;
+      
+      // Show results
+      document.getElementById('results').classList.remove('hidden');
+      showSuccess(`Generated ${Object.keys(message.primitiveColors).length} primitive and ${Object.keys(message.semanticColors).length} semantic color tokens!`);
+    }
+    
+    function createColorItem(name, value) {
+      const item = document.createElement('div');
+      item.className = 'color-item';
+      
+      const swatch = document.createElement('div');
+      swatch.className = 'color-swatch';
+      swatch.style.backgroundColor = value;
+      
+      const nameElement = document.createElement('div');
+      nameElement.className = 'color-name';
+      nameElement.textContent = name;
+      
+      item.appendChild(swatch);
+      item.appendChild(nameElement);
+      
+      return item;
+    }
+    
+    function showError(message) {
+      document.getElementById('loadingMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = false;
+      
+      const errorElement = document.getElementById('errorMessage');
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+    }
+    
+    function showSuccess(message) {
+      const successElement = document.getElementById('successMessage');
+      successElement.textContent = message;
+      successElement.classList.remove('hidden');
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        successElement.classList.add('hidden');
+      }, 3000);
+    }
+    
+    async function copyToClipboard() {
+      const codeOutput = document.getElementById('codeOutput');
+      const text = codeOutput.textContent;
+      
+      try {
+        await navigator.clipboard.writeText(text);
+        showSuccess('Code copied to clipboard!');
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showSuccess('Code copied to clipboard!');
+      }
+    }
+    
+    function showSettings() {
+      // This would show settings UI if needed
+      console.log('Settings requested');
+      console.log(figma.variables)
+    }
+
+    const syncBtn = document.getElementById('syncBtn');
+    const tokenSection = document.getElementById('tokenSection');
+    const tokenDropdown = document.getElementById('tokenDropdown');
+    const applyTokenBtn = document.getElementById('applyTokenBtn');
+    let tokens = {};
+
+    syncBtn.addEventListener('click', async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      try {
+        const url = 'https://raw.githubusercontent.com/FigmaGuru/tailwindgenerator/main/tokens.json';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch tokens');
+        const data = await res.json();
+        tokens = data.color || {};
+        // Populate dropdown
+        tokenDropdown.innerHTML = '';
+        Object.keys(tokens).forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key;
+          tokenDropdown.appendChild(opt);
+        });
+        tokenSection.classList.remove('hidden');
+      } catch (e) {
+        alert('Error fetching tokens: ' + e.message);
+      }
+      syncBtn.disabled = false;
+      syncBtn.textContent = 'Sync Tokens from GitHub';
+    });
+
+    applyTokenBtn.addEventListener('click', () => {
+      const selected = tokenDropdown.value;
+      if (selected && tokens[selected]) {
+        parent.postMessage({ pluginMessage: { type: 'apply-token', token: tokens[selected] } }, '*');
+      }
+    });
+  </script>
+</body>
+</html> 

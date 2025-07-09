@@ -1,0 +1,36 @@
+name: Generate Primitives CSS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-primitives:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate primitives.css
+        run: npm run generate:primitives
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add primitives.css
+          git diff --cached --quiet || git commit -m "Auto-generate primitives.css [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
