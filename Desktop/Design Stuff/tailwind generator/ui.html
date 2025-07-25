@@ -1,1100 +1,370 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Framework Plugin</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #2D2D2D;
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: auto;
-        }
-
-        /* Background Gradient Animation Styles */
-        .gradient-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(135deg, rgb(108, 0, 162) 0%, rgb(0, 17, 82) 50%, rgb(18, 113, 255) 100%);
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .gradients-container {
-            height: 100%;
-            width: 100%;
-            filter: blur(8px);
-            position: relative;
-        }
-
-        .gradient-blob {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            mix-blend-mode: soft-light;
-            opacity: 1;
-        }
-
-        .gradient-blob:nth-child(1) {
-            background: radial-gradient(circle at center, rgb(18, 113, 255) 0, rgba(18, 113, 255, 0.8) 50%) no-repeat;
-            transform-origin: center center;
-            animation: moveVertical 25s ease infinite;
-        }
-
-        .gradient-blob:nth-child(2) {
-            background: radial-gradient(circle at center, rgba(221, 74, 255, 0.9) 0, rgba(221, 74, 255, 0) 60%) no-repeat;
-            transform-origin: calc(50% - 200px);
-            animation: moveInCircle 18s reverse infinite;
-        }
-
-        .gradient-blob:nth-child(3) {
-            background: radial-gradient(circle at center, rgba(100, 220, 255, 0.9) 0, rgba(100, 220, 255, 0) 60%) no-repeat;
-            transform-origin: calc(50% + 200px);
-            animation: moveInCircle 35s linear infinite;
-        }
-
-        .gradient-blob:nth-child(4) {
-            background: radial-gradient(circle at center, rgba(200, 50, 50, 0.9) 0, rgba(200, 50, 50, 0) 60%) no-repeat;
-            transform-origin: calc(50% - 100px);
-            animation: moveHorizontal 30s ease infinite;
-            opacity: 0.8;
-        }
-
-        .gradient-blob:nth-child(5) {
-            background: radial-gradient(circle at center, rgba(180, 180, 50, 0.9) 0, rgba(180, 180, 50, 0) 60%) no-repeat;
-            transform-origin: calc(50% - 300px) calc(50% + 300px);
-            animation: moveInCircle 22s ease infinite;
-        }
-
-        .gradient-blob:nth-child(6) {
-            background: radial-gradient(circle at center, rgba(140, 100, 255, 0.9) 0, rgba(140, 100, 255, 0) 60%) no-repeat;
-            mix-blend-mode: hard-light;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0.8;
-            animation: none;
-        }
-
-        @keyframes moveHorizontal {
-            0% {
-                transform: translateX(-50%) translateY(-10%);
-            }
-            50% {
-                transform: translateX(50%) translateY(10%);
-            }
-            100% {
-                transform: translateX(-50%) translateY(-10%);
-            }
-        }
-
-        @keyframes moveInCircle {
-            0% {
-                transform: rotate(0deg);
-            }
-            50% {
-                transform: rotate(180deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes moveVertical {
-            0% {
-                transform: translateY(-50%);
-            }
-            50% {
-                transform: translateY(50%);
-            }
-            100% {
-                transform: translateY(-50%);
-            }
-        }
-
-        .onboarding-container {
-            width: 400px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(8px);
-            position: relative;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(103, 58, 183, 0.3);
-            padding: 0;
-            margin: 0;
-            z-index: 1;
-            overflow: hidden;
-        }
-
-        .slides-container {
-            display: flex;
-            width: 700%;
-            transition: transform 0.5s ease-in-out;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .slide {
-            width: 14.285%;
-            flex-shrink: 0;
-            height: 100%;
-            padding: 20px 24px 16px 24px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .onboarding-content {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-            position: relative;
-            z-index: 2;
-            overflow: hidden;
-        }
-
-        .logo-section {
-            text-align: center;
-            margin-top: 0px;
-            margin-bottom: 20px;
-            flex-shrink: 0;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            filter: drop-shadow(0 8px 24px rgba(103, 58, 183, 0.15));
-            background: #F8F9FA;
-            border: 1px solid #E1E1E1;
-            border-radius: 8px;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .logo img {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .logo-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            gap: 8px;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: #E1E1E1;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #999;
-        }
-
-        .logo-text {
-            font-size: 12px;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .progress-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 0px;
-        }
-
-        .progress-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .progress-icon {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #666666;
-        }
-
-        .progress-icon.active {
-            color: #673AB7;
-        }
-
-        .progress-dash {
-            width: 16px;
-            height: 2px;
-            background: #666666;
-        }
-
-        .content-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 0;
-            overflow: hidden;
-            padding-bottom: 100px;
-            padding-top: 0;
-        }
-
-        .text-content {
-            flex-shrink: 0;
-            overflow: visible;
-            text-align: left;
-            width: 100%;
-        }
-
-        .title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #2D2D2D;
-            line-height: 1.2;
-            text-align: left;
-        }
-
-        .subtitle {
-            font-size: 14px;
-            color: #555555;
-            margin-bottom: 20px;
-            line-height: 1.4;
-            font-weight: 500;
-            display: flex;
-            align-items: flex-start;
-            text-align: left;
-        }
-
-        .features {
-            margin-bottom: 0px;
-            margin-top: 24px;
-            overflow: visible;
-        }
-
-        .feature {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            gap: 10px;
-        }
-
-        .feature-icon {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #673AB7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            background: transparent;
-        }
-
-        .feature-icon::after {
-            content: "✓";
-            color: #673AB7;
-            font-size: 10px;
-        }
-
-        .feature-text {
-            font-size: 14px;
-            color: #2D2D2D;
-            font-weight: 400;
-        }
-
-        .instruction-text {
-            font-size: 12px;
-            color: #666666;
-            margin-top: 12px;
-            text-align: left;
-            line-height: 1.4;
-            font-weight: 400;
-        }
-
-        .navigation-container {
-            padding: 0;
-            width: 100%;
-            flex-shrink: 0;
-            position: absolute;
-            bottom: 32px;
-            left: 0;
-            right: 0;
-            z-index: 2;
-            background: transparent;
-        }
-
-        /* Author attribution styles */
-        .author-attribution {
-            position: absolute;
-            bottom: -16px;
-            left: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .author-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            color: #666666;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .author-link:hover {
-            color: #673AB7;
-            transform: translateY(-1px);
-        }
-
-        .author-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(103, 58, 183, 0.2);
-        }
-
-        .avatar-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .author-label {
-            font-size: 12px;
-            color: inherit;
-            font-weight: 500;
-        }
-
-        .bottom-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            width: 100%;
-            padding: 0;
-            padding-top: 0px;
-            flex-direction: row;
-        }
-
-        .skip-section {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-shrink: 0;
-            width: 100%;
-            padding: 0;
-            margin-bottom: 4px;
-        }
-
-        .cta-button {
-            background: #673AB7;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            line-height: 20px;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .cta-button:hover {
-            background: #5E35B1;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
-        }
-
-        .cta-button:disabled {
-            background: #9E9E9E;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .skip-link {
-            color: #2D2D2D;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 400;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .skip-link:hover {
-            color: #673AB7;
-            text-decoration: underline;
-        }
-
-        .page-indicators {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            flex-shrink: 0;
-            margin-top: 0px;
-            padding: 4px 0;
-        }
-
-        .page-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #E1BEE7;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-            position: relative;
-        }
-
-        .page-dot:hover {
-            background: #D1C4E9;
-            transform: scale(1.2);
-            box-shadow: 0 2px 8px rgba(103, 58, 183, 0.2);
-        }
-
-        .page-dot.active {
-            background: #673AB7;
-            border-color: #673AB7;
-            transform: scale(1.3);
-            box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
-        }
-
-        .page-dot:active {
-            transform: scale(0.9);
-        }
-
-        /* Overlay styles */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(60px);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            /* Remove any aria-hidden to prevent accessibility conflicts */
-        }
-        
-        .overlay.show {
-            display: flex;
-        }
-
-        .overlay-content {
-            text-align: center;
-            max-width: 280px;
-        }
-
-        .overlay-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(103, 58, 183, 0.2);
-            border-top: 3px solid #673AB7;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 24px;
-        }
-
-        .overlay-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2D2D2D;
-            margin-bottom: 12px;
-        }
-
-        .overlay-subtitle {
-            font-size: 14px;
-            color: #666666;
-            line-height: 1.5;
-        }
-
-        .overlay-cancel {
-            position: absolute;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .cancel-link {
-            color: #673AB7;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            /* Ensure proper focus management */
-            outline: 2px solid transparent;
-            outline-offset: 2px;
-        }
-
-        .cancel-link:hover,
-        .cancel-link:focus {
-            color: #5E35B1;
-            text-decoration: underline;
-            outline: 2px solid #673AB7;
-        }
-
-        .success-toast {
-            display: none;
-        }
-
-        .spinner {
-            border: 2px solid rgba(103, 58, 183, 0.2);
-            border-top: 2px solid #673AB7;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .onboarding-container {
-                width: 100%;
-                height: 600px;
-                padding: 20px 16px;
-                overflow: hidden;
-            }
-            
-            .title {
-                font-size: 18px;
-            }
-            
-            .subtitle {
-                font-size: 14px;
-            }
-
-            .feature-text {
-                font-size: 13px;
-            }
-
-            .bottom-section {
-                flex-direction: row;
-                gap: 12px;
-                align-items: center;
-            }
-
-            .cta-button {
-                width: auto;
-            }
-
-            .skip-link {
-                text-align: center;
-            }
-        }
-    </style>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #ffffff;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 100%;
+    }
+    
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+    
+    .description {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    
+    .button {
+      background: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 16px;
+      transition: background-color 0.2s;
+    }
+    
+    .button:hover {
+      background: #0d8ce0;
+    }
+    
+    .button:disabled {
+      background: #e5e5e5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .color-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .color-swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      border: 1px solid #e5e5e5;
+      margin-bottom: 4px;
+    }
+    
+    .color-name {
+      font-size: 11px;
+      color: #666;
+      word-break: break-all;
+    }
+    
+    .code-output {
+      background: #f5f5f5;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .copy-button {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .copy-button:hover {
+      background: #e5e5e5;
+    }
+    
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .success {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .loading {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-    <div class="gradient-background">
-        <div class="gradients-container">
-            <div class="gradient-blob"></div>
-            <div class="gradient-blob"></div>
-            <div class="gradient-blob"></div>
-            <div class="gradient-blob"></div>
-            <div class="gradient-blob"></div>
-            <div class="gradient-blob"></div>
-        </div>
+  <div class="container">
+    <h1>Tailwind Color Generator</h1>
+    <div class="description">
+      Extract color styles from your Figma file and generate Tailwind CSS color tokens (primitives and semantics).
     </div>
-    <div class="onboarding-container">
-        <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="overlay hidden">
-            <div class="overlay-content">
-                <div class="overlay-spinner"></div>
-                <div class="overlay-title">Generating Design Tokens</div>
-                <div class="overlay-subtitle">This can take a minute... Creating primitive and semantic variables.</div>
-            </div>
-            <div class="overlay-cancel">
-                <a href="#" class="cancel-link" onclick="cancelGeneration()">Cancel</a>
-            </div>
-            <!-- Emergency close button -->
-            <div style="position: absolute; top: 16px; right: 16px;">
-                <button onclick="emergencyClose()" style="background: #FF4444; color: white; border: none; border-radius: 4px; padding: 8px 12px; font-size: 12px; cursor: pointer;">Force Close</button>
-            </div>
-        </div>
-
-        <!-- Success Toast -->
-        <div id="successToast" class="success-toast">
-            Success! All Primitive and Semantic Variables Created.
-        </div>
-
-        <div class="slides-container">
-            <!-- Slide 1 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Welcome to Framework.</h1>
-                            <p class="subtitle">Your Design System on Autopilot. Automate token creation, mapping, and code export—directly in Figma.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 2 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Massive Time Savings</h1>
-                            <p class="subtitle">Turn hours of work into seconds with one-click variable generation, eliminating copy-paste errors and producing ready-to-use Tailwind config or CSS variables.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 3 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Consistency by Design</h1>
-                            <p class="subtitle">Your design system, enforced automatically with single-source variables that maintain brand consistency and map design intent to code without drift.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 4 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Error-Proof Workflows</h1>
-                            <p class="subtitle">Goodbye manual mistakes with validated, production-ready variables, visual reviews before export, and consistent, error-free naming.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 5 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Scalable & Flexible</h1>
-                            <p class="subtitle">Supports easy theming with primitives and semantics, adapts to light/dark modes and multiple brands, and exports in formats for Web, Android, iOS, and custom setups.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 6 -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Developer-Ready Output</h1>
-                            <p class="subtitle">Enables seamless design-to-code handoff with outputs in Tailwind, CSS, and JSON, perfectly aligned with developer workflows and a shared source of truth.</p>
-                            <button class="cta-button" onclick="nextSlide()">Continue</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 7 - Final slide with generate button -->
-            <div class="slide">
-                <div class="onboarding-content">
-                    <div class="content-section">
-                        <div class="text-content">
-                            <h1 class="title">Engineered for Teams</h1>
-                            <p class="subtitle">Designed for real-world collaboration with easy sharing, standardized naming for team clarity, and a single source of truth in Figma.</p>
-                            <button id="generateBtn" class="cta-button" onclick="startGeneration()">
-                                <span id="btnText">Generate</span>
-                                <span id="btnSpinner" class="spinner hidden"></span>
-                            </button>
-                            <p class="instruction-text">Click "Generate" to create Primitive and Semantic variables.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Fixed Navigation Container -->
-        <div class="navigation-container">
-            <div class="skip-section">
-                <a href="#" class="skip-link" onclick="skipOnboarding()">Skip & Generate</a>
-            </div>
-            
-            <div class="page-indicators">
-                <div class="page-dot active" onclick="goToSlide(0)" title="Welcome to Framework"></div>
-                <div class="page-dot" onclick="goToSlide(1)" title="Massive Time Savings"></div>
-                <div class="page-dot" onclick="goToSlide(2)" title="Consistency by Design"></div>
-                <div class="page-dot" onclick="goToSlide(3)" title="Error-Proof Workflows"></div>
-                <div class="page-dot" onclick="goToSlide(4)" title="Scalable & Flexible"></div>
-                <div class="page-dot" onclick="goToSlide(5)" title="Developer-Ready Output"></div>
-                <div class="page-dot" onclick="goToSlide(6)" title="Engineered for Teams"></div>
-            </div>
-            
-            <!-- Author attribution -->
-            <div class="author-attribution">
-                <a href="https://www.figma.com/@markdoyle" target="_blank" rel="noopener noreferrer" class="author-link">
-                    <span class="author-label">by Mark</span>
-                </a>
-            </div>
-        </div>
+    
+    <button id="generateBtn" class="button">Generate Color Tokens</button>
+    <button id="syncBtn" class="button" style="background:#34d399;">Sync Tokens from GitHub</button>
+    <div id="tokenSection" class="section hidden">
+      <div class="section-title">Apply Token to Selection</div>
+      <select id="tokenDropdown" style="width:100%;padding:8px 4px;margin-bottom:8px;"></select>
+      <button id="applyTokenBtn" class="button" style="background:#6366f1;">Apply Token</button>
     </div>
+    
+    <div id="errorMessage" class="error hidden"></div>
+    <div id="successMessage" class="success hidden"></div>
+    
+    <div id="loadingMessage" class="loading hidden">
+      Analyzing your Figma styles...
+    </div>
+    
+    <div id="results" class="hidden">
+      <div class="section">
+        <div class="section-title">Primitive Colors (Base Values)</div>
+        <div id="primitiveColors" class="color-grid"></div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Semantic Colors (Component Tokens)</div>
+        <div id="semanticColors" class="color-grid"></div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Generated Tailwind Plugin Code</div>
+        <div id="codeOutput" class="code-output"></div>
+        <button id="copyBtn" class="copy-button">Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        let currentSlide = 0;
-        const totalSlides = 7;
-        let overlayShouldHide = false;
+  <script>
+    // Handle button clicks
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      generateColors();
+    });
+    
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      copyToClipboard();
+    });
+    
+    // Listen for messages from the plugin code
+    window.onmessage = async (event) => {
+      const message = event.data.pluginMessage;
+      
+      if (!message) return;
+      
+      switch (message.type) {
+        case 'generated-code':
+          showResults(message);
+          break;
+        case 'error':
+          showError(message.message);
+          break;
+        case 'show-settings':
+          showSettings();
+          break;
+      }
+    };
+    
+    function generateColors() {
+      // Show loading state
+      document.getElementById('loadingMessage').classList.remove('hidden');
+      document.getElementById('results').classList.add('hidden');
+      document.getElementById('errorMessage').classList.add('hidden');
+      document.getElementById('successMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = true;
+      
+      // Send message to plugin code
+      parent.postMessage({ pluginMessage: { type: 'generate-colors' } }, '*');
+    }
+    
+    function showResults(message) {
+      // Hide loading state
+      document.getElementById('loadingMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = false;
+      
+      // Display primitive colors
+      const primitiveContainer = document.getElementById('primitiveColors');
+      primitiveContainer.innerHTML = '';
+      
+      Object.entries(message.primitiveColors).forEach(([name, value]) => {
+        const colorItem = createColorItem(name, value);
+        primitiveContainer.appendChild(colorItem);
+      });
+      
+      // Display semantic colors
+      const semanticContainer = document.getElementById('semanticColors');
+      semanticContainer.innerHTML = '';
+      
+      Object.entries(message.semanticColors).forEach(([name, value]) => {
+        const colorItem = createColorItem(name, value);
+        semanticContainer.appendChild(colorItem);
+      });
+      
+      // Display generated code
+      document.getElementById('codeOutput').textContent = message.code;
+      
+      // Show results
+      document.getElementById('results').classList.remove('hidden');
+      showSuccess(`Generated ${Object.keys(message.primitiveColors).length} primitive and ${Object.keys(message.semanticColors).length} semantic color tokens!`);
+    }
+    
+    function createColorItem(name, value) {
+      const item = document.createElement('div');
+      item.className = 'color-item';
+      
+      const swatch = document.createElement('div');
+      swatch.className = 'color-swatch';
+      swatch.style.backgroundColor = value;
+      
+      const nameElement = document.createElement('div');
+      nameElement.className = 'color-name';
+      nameElement.textContent = name;
+      
+      item.appendChild(swatch);
+      item.appendChild(nameElement);
+      
+      return item;
+    }
+    
+    function showError(message) {
+      document.getElementById('loadingMessage').classList.add('hidden');
+      document.getElementById('generateBtn').disabled = false;
+      
+      const errorElement = document.getElementById('errorMessage');
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+    }
+    
+    function showSuccess(message) {
+      const successElement = document.getElementById('successMessage');
+      successElement.textContent = message;
+      successElement.classList.remove('hidden');
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        successElement.classList.add('hidden');
+      }, 3000);
+    }
+    
+    async function copyToClipboard() {
+      const codeOutput = document.getElementById('codeOutput');
+      const text = codeOutput.textContent;
+      
+      try {
+        await navigator.clipboard.writeText(text);
+        showSuccess('Code copied to clipboard!');
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showSuccess('Code copied to clipboard!');
+      }
+    }
+    
+    function showSettings() {
+      // This would show settings UI if needed
+      console.log('Settings requested');
+      console.log(figma.variables)
+    }
 
-        function nextSlide() {
-            if (currentSlide < totalSlides - 1) {
-                currentSlide++;
-                updateSlide();
-            } else {
-                // On last slide, start the actual onboarding
-                startOnboarding();
-            }
-        }
+    const syncBtn = document.getElementById('syncBtn');
+    const tokenSection = document.getElementById('tokenSection');
+    const tokenDropdown = document.getElementById('tokenDropdown');
+    const applyTokenBtn = document.getElementById('applyTokenBtn');
+    let tokens = {};
 
-        function goToSlide(slideIndex) {
-            currentSlide = slideIndex;
-            updateSlide();
-        }
-
-        function updateSlide() {
-            const slidesContainer = document.querySelector('.slides-container');
-            
-            // Update slide position
-            slidesContainer.style.transform = `translateX(-${currentSlide * 14.285}%)`;
-            
-            // Update active dot in the fixed navigation
-            const allDots = document.querySelectorAll('.page-dot');
-            allDots.forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentSlide);
-            });
-        }
-
-        function startOnboarding() {
-            // This will be replaced with actual generation logic
-            startGeneration();
-        }
-
-        function skipOnboarding() {
-            // Skip directly to generation
-            startGeneration();
-        }
-
-        function startGeneration() {
-            console.log('startGeneration called');
-            
-            // Show the loading overlay first
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('show');
-            console.log('Overlay shown with show class');
-            
-            // Send message to Figma plugin after a short delay to ensure overlay is visible
-            setTimeout(() => {
-                console.log('Sending generate-colors message to plugin');
-                parent.postMessage({ pluginMessage: { type: 'generate-colors' } }, '*');
-            }, 200);
-            
-            // Fallback: Hide overlay after 10 seconds maximum if no response (increased timeout)
-            setTimeout(() => {
-                const overlay = document.getElementById('loadingOverlay');
-                if (!overlay.classList.contains('hidden')) {
-                    console.log('Fallback: Hiding overlay after 10 second timeout');
-                    hideOverlay();
-                    showError('Plugin did not respond. Please try again.');
-                }
-            }, 10000);
-        }
-
-        function hideOverlay() {
-            console.log('hideOverlay called');
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.classList.add('hidden');
-                overlay.classList.remove('show');
-                console.log('Overlay hidden with hidden class and show class removed');
-                
-                // Ensure proper focus management when overlay is hidden
-                const generateBtn = document.getElementById('generateBtn');
-                if (generateBtn) {
-                    generateBtn.focus();
-                }
-            }
-        }
-
-        function showError(message) {
-            // Hide the loading overlay
-            hideOverlay();
-            
-            // Reset button state
-            const generateBtn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
-            
-            generateBtn.disabled = false;
-            btnText.classList.remove('hidden');
-            btnSpinner.classList.add('hidden');
-            
-            // Show error in toast instead of UI
-            showToast(message);
-        }
-
-        function showToast(msg) {
-            // Create toast element if it doesn't exist
-            let toast = document.getElementById('toast');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'toast';
-                toast.style.cssText = `
-                    position: fixed;
-                    bottom: 32px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: #673AB7;
-                    color: white;
-                    border-radius: 8px;
-                    padding: 16px 24px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    box-shadow: 0 4px 24px rgba(103, 58, 183, 0.3);
-                    z-index: 1000;
-                    display: none;
-                `;
-                document.body.appendChild(toast);
-            }
-            
-            toast.textContent = msg;
-            toast.style.display = 'block';
-            
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 2500);
-        }
-
-        function showSuccessToast() {
-            console.log('showSuccessToast called');
-            
-            // Close the plugin immediately after successful generation
-            console.log('Closing plugin after successful generation');
-            parent.postMessage({ pluginMessage: { type: 'close-plugin' } }, '*');
-        }
-
-        function cancelGeneration() {
-            console.log('Cancel generation called');
-            // Hide the loading overlay
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('show');
-            
-            // Reset button state
-            const generateBtn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
-            
-            generateBtn.disabled = false;
-            btnText.classList.remove('hidden');
-            btnSpinner.classList.add('hidden');
-        }
-
-        function emergencyClose() {
-            console.log('Emergency close called');
-            // Force hide the overlay
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('show');
-            
-            // Reset everything
-            const generateBtn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
-            
-            if (generateBtn) {
-                generateBtn.disabled = false;
-                btnText.classList.remove('hidden');
-                btnSpinner.classList.add('hidden');
-            }
-            
-            // Show error message in toast
-            showToast('Operation cancelled. Please try again.');
-        }
-
-        // Handle messages from Figma plugin
-        window.onmessage = async (event) => {
-            const message = event.data.pluginMessage;
-            if (!message) return;
-            
-            console.log('UI received message:', message.type);
-            
-            switch (message.type) {
-                case 'success':
-                    console.log('Showing success and closing plugin');
-                    hideOverlay();
-                    showSuccessToast();
-                    break;
-                case 'error':
-                    console.log('Showing error:', message.message);
-                    showError(message.message || 'An error occurred during color generation');
-                    break;
-                case 'progress':
-                    console.log('Generation progress:', message.message);
-                    // Update progress if needed
-                    break;
-                default:
-                    console.log('Unknown message type:', message.type);
-            }
-        };
-
-        // Add smooth animations
-        document.addEventListener('DOMContentLoaded', function() {
-            // Ensure overlay is hidden on DOM load
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('show');
-            console.log('DOM loaded - Overlay hidden class:', overlay.classList.contains('hidden'));
-            
-            // Show placeholder logos by default (matching the design)
-            const logos = document.querySelectorAll('.logo');
-            logos.forEach(logo => {
-                const img = logo.querySelector('img');
-                const placeholder = logo.querySelector('.logo-placeholder');
-                if (img && placeholder) {
-                    // Hide image and show placeholder to match design
-                    img.style.display = 'none';
-                    placeholder.style.display = 'flex';
-                }
-            });
-            
-            const elements = document.querySelectorAll('.logo, .title, .subtitle, .feature, .cta-button');
-            elements.forEach((el, index) => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(20px)';
-                setTimeout(() => {
-                    el.style.transition = 'all 0.6s ease';
-                    el.style.opacity = '1';
-                    el.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
+    syncBtn.addEventListener('click', async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      try {
+        const url = 'https://raw.githubusercontent.com/FigmaGuru/tailwindgenerator/main/tokens.json';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch tokens');
+        const data = await res.json();
+        tokens = data.color || {};
+        // Populate dropdown
+        tokenDropdown.innerHTML = '';
+        Object.keys(tokens).forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key;
+          tokenDropdown.appendChild(opt);
         });
+        tokenSection.classList.remove('hidden');
+      } catch (e) {
+        alert('Error fetching tokens: ' + e.message);
+      }
+      syncBtn.disabled = false;
+      syncBtn.textContent = 'Sync Tokens from GitHub';
+    });
 
-        // Resize to fit content
-        function resizeToFitContent() {
-            // Fixed size for the container
-            parent.postMessage({ pluginMessage: { type: 'resize', width: 400, height: 600 } }, '*');
-        }
-
-        // Call resize on load and after content changes
-        window.onload = function() {
-            // Verify overlay is hidden on load
-            const overlay = document.getElementById('loadingOverlay');
-            console.log('On load - Overlay hidden class:', overlay.classList.contains('hidden'));
-            console.log('On load - Overlay show class:', overlay.classList.contains('show'));
-            console.log('On load - Overlay display style:', getComputedStyle(overlay).display);
-            
-            // Set initial dimensions for Figma plugin container
-            setTimeout(() => {
-                resizeToFitContent();
-            }, 50);
-            
-            // Ensure dimensions are maintained
-            setTimeout(() => {
-                resizeToFitContent();
-            }, 500);
-        };
-
-        // Resize when switching between onboarding and results
-        function updateSlide() {
-            const slidesContainer = document.querySelector('.slides-container');
-            
-            // Update slide position
-            slidesContainer.style.transform = `translateX(-${currentSlide * 14.285}%)`;
-            
-            // Update active dot in all slides
-            const allDots = document.querySelectorAll('.page-dot');
-            allDots.forEach((dot, index) => {
-                // Calculate which slide this dot belongs to (0-6)
-                const dotSlideIndex = index % 7;
-                dot.classList.toggle('active', dotSlideIndex === currentSlide);
-            });
-            
-            // Resize to fit content after slide transition
-            setTimeout(() => {
-                resizeToFitContent();
-            }, 300);
-        }
-    </script>
+    applyTokenBtn.addEventListener('click', () => {
+      const selected = tokenDropdown.value;
+      if (selected && tokens[selected]) {
+        parent.postMessage({ pluginMessage: { type: 'apply-token', token: tokens[selected] } }, '*');
+      }
+    });
+  </script>
 </body>
 </html> 

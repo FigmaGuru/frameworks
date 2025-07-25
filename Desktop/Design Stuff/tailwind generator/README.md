@@ -1,16 +1,16 @@
-# Variable Generator Plugin
+# Tailwind Color Generator Plugin
 
-A simple Interlink plugin that generates **primitive color tokens** and **semantic color tokens** that reference them.
+A simple Tailwind CSS plugin that generates **primitive color tokens** and **semantic color tokens** that reference them.
 
 ## 🎨 **Figma Plugin Version**
 
-This repository includes a **Figma plugin** that automatically extracts color styles from your Figma file and generates the Interlink plugin code for you!
+This repository includes a **Figma plugin** that automatically extracts color styles from your Figma file and generates the Tailwind plugin code for you!
 
 ### How the Figma Plugin Works
 
 1. **Install the plugin** in Figma
 2. **Create color styles** in your Figma file (name them like "Blue/500", "Primary", etc.)
-3. **Run the plugin** to extract colors and generate Interlink code
+3. **Run the plugin** to extract colors and generate Tailwind code
 4. **Copy the generated code** directly into your project
 
 ### Figma Plugin Files
@@ -28,10 +28,10 @@ Think of this like Figma's color system:
 
 ## Installation
 
-### For Interlink Projects
+### For Tailwind Projects
 
 ```bash
-npm install interlink
+npm install tailwind-color-generator
 ```
 
 ### For Figma Plugin Development
@@ -42,13 +42,13 @@ npm install interlink
 
 ## Setup
 
-Add the plugin to your `interlink.config.js`:
+Add the plugin to your `tailwind.config.js`:
 
 ```javascript
 module.exports = {
   content: ["./src/**/*.{html,js}"],
   plugins: [
-    require('interlink')
+    require('tailwind-color-generator')
   ],
 }
 ```
@@ -148,7 +148,7 @@ This mirrors how design systems work:
 
 1. **Primitives** = Your source of truth (like Figma color styles)
 2. **Semantics** = Meaningful names that reference primitives (like component styles)
-3. **Utilities** = Ready-to-use CSS classes (like Interlink's built-in utilities)
+3. **Utilities** = Ready-to-use CSS classes (like Tailwind's built-in utilities)
 
 This separation makes it easy to:
 - Change colors globally by updating primitives
