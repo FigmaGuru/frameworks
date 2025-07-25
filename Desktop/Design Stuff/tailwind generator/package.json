@@ -1,7 +1,7 @@
 {
-  "name": "tailwind-color-generator",
+  "name": "interlink",
   "version": "1.0.0",
-  "description": "A simple Tailwind CSS plugin for generating primitive and semantic color tokens",
+  "description": "A simple plugin for generating primitive and semantic color tokens",
   "main": "index.js",
   "scripts": {
     "generate:primitives": "node generate-primitives-css.js"
