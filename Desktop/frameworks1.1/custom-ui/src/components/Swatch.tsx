@@ -1,3 +1,4 @@
+// src/components/Swatch.tsx
 import React, { useState } from "react";
 import { Undo2 } from "lucide-react";
 
@@ -13,7 +14,7 @@ export interface SwatchProps {
 }
 
 /**
- * Master Swatch component with hover-editable alias, revert, info tooltip, and include toggle
+ * Master Swatch component with hover‐editable alias and revert button
  */
 function Swatch({
   hex,
@@ -33,16 +34,8 @@ function Swatch({
       {/* Color background */}
       <div className="absolute inset-0" style={{ backgroundColor: hex }} />
 
-      {/* Top-left: include checkbox */}
-      <input
-        type="checkbox"
-        checked={included}
-        onChange={onToggleIncluded}
-        className="absolute top-2 left-2 w-3.5 h-3.5 bg-white rounded focus:ring"
-      />
-
-      {/* Top-right: revert & info, visible on hover */}
-      <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      {/* Top-right: revert, visible on hover */}
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         {isEdited && (
           <button
             onClick={onReset}
@@ -66,6 +59,8 @@ function Swatch({
           type="text"
           value={alias}
           onChange={e => onAliasChange(e.target.value)}
+          onFocus={() => setIsEditing(true)}
+          onBlur={() => setIsEditing(false)}
           className="w-full text-center font-semibold text-sm bg-white bg-opacity-80 rounded border border-transparent focus:outline-none focus:border-gray-300 transition truncate"
         />
       </div>

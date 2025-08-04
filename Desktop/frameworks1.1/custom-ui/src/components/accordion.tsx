@@ -1,3 +1,4 @@
+// src/components/Accordion.tsx
 import React from "react";
 
 interface AccordionProps {
@@ -11,8 +12,6 @@ interface AccordionProps {
   isOpen: boolean;
   /** Toggle handler */
   onToggle: () => void;
-  /** Optional controls (e.g., checkboxes) */
-  headerControls?: React.ReactNode;
   /** Panel content */
   children: React.ReactNode;
 }
@@ -23,7 +22,6 @@ export default function Accordion({
   count,
   isOpen,
   onToggle,
-  headerControls,
   children,
 }: AccordionProps) {
   return (
@@ -35,7 +33,6 @@ export default function Accordion({
         aria-controls={id}
       >
         <div className="flex items-center space-x-2">
-          {headerControls}
           <svg
             className={`w-4 h-4 transform transition-transform duration-300 ${
               isOpen ? "rotate-180" : "rotate-0"
