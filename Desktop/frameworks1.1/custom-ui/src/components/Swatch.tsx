@@ -14,9 +14,10 @@ export interface SwatchProps {
 }
 
 /**
- * Master Swatch component with hover‐editable alias and revert button
+ * Master Swatch component with hover-editable alias, revert, info tooltip removed,
+ * rounded corners, increased height, no internal checkbox (handled in Accordion).
  */
-function Swatch({
+const Swatch: React.FC<SwatchProps> = ({
   hex,
   originalHex,
   alias,
@@ -25,55 +26,57 @@ function Swatch({
   onAliasChange,
   onToggleIncluded,
   onReset,
-}: SwatchProps) {
+}) => {
   const [isEditing, setIsEditing] = useState(false);
+  // only show revert when edited
   const isEdited = hex.toLowerCase() !== originalHex.toLowerCase();
 
   return (
-    <label className="group w-32 h-28 relative overflow-hidden rounded-2xl shadow-md cursor-pointer">
-      {/* Color background */}
+    <label className="group w-32 h-32 relative overflow-hidden rounded-[16px] shadow-md cursor-pointer">
+      {/* color background */}
       <div className="absolute inset-0" style={{ backgroundColor: hex }} />
 
-      {/* Top-right: revert, visible on hover */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        {isEdited && (
-          <button
-            onClick={onReset}
-            className="p-1 bg-white rounded-full shadow hover:bg-gray-100"
-            title="Revert to original hex"
-          >
-            <Undo2 size={16} className="text-gray-600" />
-          </button>
-        )}
-      </div>
+      {/* click opens color picker */}
+      <input
+        type="color"
+        value={hex}
+        onChange={e => onHexChange(e.target.value)}
+        className="absolute inset-0 opacity-0 z-10"
+      />
 
-      {/* Bottom: hex badge + alias input */}
-      <div className="absolute inset-x-2 bottom-2 flex flex-col items-center space-y-1">
-        {/* Hex badge */}
+      {/* Top-right revert */}
+      {isEdited && (
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            onReset();
+          }}
+          className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-gray-100 z-20"
+          title="Revert to original"
+        >
+          <Undo2 size={16} className="text-gray-600" />
+        </button>
+      )}
+
+      {/* Bottom: hex badge and alias input */}
+      <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center space-y-1 z-20">
+        {/* hex badge */}
         <div className="bg-white text-black text-[10px] font-mono rounded-full px-2 py-0.5">
           {hex.toUpperCase()}
         </div>
-
-        {/* Alias input always visible */}
+        {/* alias input always visible, truncated */}
         <input
           type="text"
           value={alias}
           onChange={e => onAliasChange(e.target.value)}
           onFocus={() => setIsEditing(true)}
           onBlur={() => setIsEditing(false)}
-          className="w-full text-center font-semibold text-sm bg-white bg-opacity-80 rounded border border-transparent focus:outline-none focus:border-gray-300 transition truncate"
+          className={`w-full text-center font-semibold text-sm bg-white bg-opacity-80 rounded transition-border outline-none
+            ${isEditing ? "border border-gray-300" : "border-transparent"} truncate`}
         />
       </div>
-
-      {/* Native color picker (click anywhere) */}
-      <input
-        type="color"
-        value={hex}
-        onChange={e => onHexChange(e.target.value)}
-        className="absolute inset-0 opacity-0 cursor-pointer"
-      />
     </label>
   );
-}
+};
 
 export default Swatch;

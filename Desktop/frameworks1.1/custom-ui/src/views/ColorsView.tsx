@@ -54,118 +54,173 @@ const semanticPresets = {
 };
 
 export default function ColorsView({ query = "" }: { query?: string }) {
-  const [activeTab, setActiveTab] = useState<"primitives" | "semantics">("primitives");
+  const [activeTab, setActiveTab] = useState<"primitives" | "semantics">(
+    "primitives"
+  );
 
-  const groupedColors = useMemo(() => {
-    const result: Record<string, Array<{ step: string; hex: string; alias: string; included: boolean; originalHex: string }>> = {};
+  // Build primitive groups
+  const groupedPrimitives = useMemo(() => {
+    const result: Record<
+      string,
+      Array<{
+        step: string;
+        hex: string;
+        alias: string;
+        included: boolean;
+        originalHex: string;
+      }>
+    > = {};
     const seen = new Set<string>();
 
     Object.entries(tailwindColors).forEach(([family, ramp]) => {
       const items = Object.entries(ramp as Record<string, string>)
-        .map(([step, hex]) => {
-          return {
-            step,
-            hex,
-            originalHex: hex,
-            alias: family + "-" + step,
-            included: true,
-          };
-        })
-        .filter(({ hex }) => /^#([0-9a-f]{6})$/i.test(hex) && !seen.has(hex) && seen.add(hex));
+        .map(([step, hex]) => ({
+          step,
+          hex,
+          originalHex: hex,
+          alias: `${family}-${step}`,
+          included: true,
+        }))
+        .filter(
+          ({ hex }) =>
+            /^#([0-9a-f]{6})$/i.test(hex) && !seen.has(hex) && seen.add(hex)
+        );
       if (items.length) result[family] = items;
     });
 
     return result;
   }, []);
 
-  const [colors, setColors] = useState(groupedColors);
-  const [openFamilies, setOpenFamilies] = useState<Record<string, boolean>>({});
-  const checkboxRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  // Primitives state
+  const [primitives, setPrimitives] = useState(groupedPrimitives);
+  const [openPrimitives, setOpenPrimitives] = useState<
+    Record<string, boolean>
+  >({});
+  const primCheckboxRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // Semantics accordions state
+  const [openSemantics, setOpenSemantics] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Keep header checkbox indeterminate
   useEffect(() => {
-    Object.entries(colors).forEach(([family, items]) => {
-      const el = checkboxRefs.current[family];
+    Object.entries(primitives).forEach(([family, items]) => {
+      const el = primCheckboxRefs.current[family];
       if (!el) return;
-      const count = items.filter(i => i.included).length;
+      const count = items.filter((i) => i.included).length;
       el.indeterminate = count > 0 && count < items.length;
     });
-  }, [colors]);
+  }, [primitives]);
 
-  const toggleAccordion = (key: string) => setOpenFamilies(p => ({ ...p, [key]: !p[key] }));
-  const handleAliasChange = (f: string, i: number, v: string) => {
-    const c = { ...colors }; c[f][i].alias = v; setColors(c);
+  // PRIMITIVE handlers
+  const togglePrimitive = (f: string) =>
+    setOpenPrimitives((p) => ({ ...p, [f]: !p[f] }));
+  const changePrimitiveAlias = (f: string, i: number, v: string) => {
+    const c = { ...primitives };
+    c[f][i].alias = v;
+    setPrimitives(c);
   };
-  const handleHexChange = (f: string, i: number, h: string) => {
-    const c = { ...colors }; c[f][i].hex = h; setColors(c);
+  const changePrimitiveHex = (f: string, i: number, h: string) => {
+    const c = { ...primitives };
+    c[f][i].hex = h;
+    setPrimitives(c);
   };
-  const resetHex = (f: string, i: number) => handleHexChange(f, i, colors[f][i].originalHex);
-  const toggleInclude = (f: string, i: number) => {
-    const c = { ...colors }; c[f][i].included = !c[f][i].included; setColors(c);
+  const resetPrimitiveHex = (f: string, i: number) =>
+    changePrimitiveHex(f, i, primitives[f][i].originalHex);
+  const togglePrimitiveInclude = (f: string, i: number) => {
+    const c = { ...primitives };
+    c[f][i].included = !c[f][i].included;
+    setPrimitives(c);
   };
-  const toggleFamily = (f: string) => {
-    const c = { ...colors };
-    const all = c[f].every(item => item.included);
-    c[f].forEach(item => item.included = !all);
-    setColors(c);
+  const toggleFamilyInclude = (f: string) => {
+    const c = { ...primitives };
+    const all = c[f].every((item) => item.included);
+    c[f].forEach((item) => (item.included = !all));
+    setPrimitives(c);
   };
 
+  // SEMANTICS handler
+  const toggleSemantic = (f: string) =>
+    setOpenSemantics((p) => ({ ...p, [f]: !p[f] }));
+
+  // Filter primitives by alias
   const search = query.toLowerCase();
-  const filtered = useMemo(() => {
-    const result: typeof colors = {};
-    Object.entries(colors).forEach(([family, items]) => {
-      const matched = items.filter(ca => ca.alias.toLowerCase().includes(search));
-      if (matched.length) result[family] = matched;
+  const filteredPrimitives = useMemo(() => {
+    const out: typeof primitives = {};
+    Object.entries(primitives).forEach(([family, items]) => {
+      const m = items.filter((c) =>
+        c.alias.toLowerCase().includes(search)
+      );
+      if (m.length) out[family] = m;
     });
-    return result;
-  }, [colors, search]);
+    return out;
+  }, [primitives, search]);
 
+  // Send to Figma
   const sendMessage = () => {
-    const payload = Object.entries(colors).flatMap(([family, items]) =>
-      items.filter(ca => ca.included).map(ca => ({ ...ca, family }))
+    const payload = Object.entries(primitives).flatMap(([family, items]) =>
+      items.filter((c) => c.included).map((c) => ({ ...c, family }))
     );
-    parent.postMessage({ pluginMessage: { type: "generate-variables", payload } }, "*");
+    parent.postMessage(
+      { pluginMessage: { type: "generate-variables", payload } },
+      "*"
+    );
   };
 
   return (
     <div className="font-sans text-sm flex flex-col h-full overflow-hidden">
+      {/* Tabs & Generate */}
       <div className="flex items-center mb-3 px-1">
         <button
           onClick={() => setActiveTab("primitives")}
-          className={`px-4 py-1 font-semibold border-b-2 ${activeTab === "primitives" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"}`}
+          className={`px-4 py-1 font-semibold border-b-2 ${
+            activeTab === "primitives"
+              ? "border-black text-black"
+              : "border-transparent text-gray-400 hover:text-black"
+          }`}
         >
           Primitives
         </button>
         <button
           onClick={() => setActiveTab("semantics")}
-          className={`px-4 py-1 font-semibold border-b-2 ${activeTab === "semantics" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"}`}
+          className={`px-4 py-1 font-semibold border-b-2 ${
+            activeTab === "semantics"
+              ? "border-black text-black"
+              : "border-transparent text-gray-400 hover:text-black"
+          }`}
         >
           Semantics
         </button>
         <div className="ml-auto">
-          <button onClick={sendMessage} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm">
+          <button
+            onClick={sendMessage}
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm"
+          >
             Generate Variables
           </button>
         </div>
       </div>
 
+      {/* PRIMITIVES TAB */}
       {activeTab === "primitives" && (
         <div className="overflow-auto space-y-3 pr-1">
-          {Object.entries(filtered).map(([family, items]) => {
-            const all = items.every(i => i.included);
+          {Object.entries(filteredPrimitives).map(([family, items]) => {
+            const all = items.every((i) => i.included);
             return (
               <Accordion
                 key={family}
-                id={`acc-${family}`}
+                id={`prim-${family}`}
                 title={family}
                 count={items.length}
-                isOpen={!!openFamilies[family]}
-                onToggle={() => toggleAccordion(family)}
+                isOpen={!!openPrimitives[family]}
+                onToggle={() => togglePrimitive(family)}
                 headerControls={
                   <input
                     type="checkbox"
                     checked={all}
-                    ref={el => (checkboxRefs.current[family] = el)}
-                    onChange={() => toggleFamily(family)}
+                    ref={(el) => (primCheckboxRefs.current[family] = el)}
+                    onChange={() => toggleFamilyInclude(family)}
                   />
                 }
               >
@@ -177,10 +232,16 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                       originalHex={item.originalHex}
                       alias={item.alias}
                       included={item.included}
-                      onHexChange={h => handleHexChange(family, idx, h)}
-                      onAliasChange={a => handleAliasChange(family, idx, a)}
-                      onToggleIncluded={() => toggleInclude(family, idx)}
-                      onReset={() => resetHex(family, idx)}
+                      onHexChange={(h) =>
+                        changePrimitiveHex(family, idx, h)
+                      }
+                      onAliasChange={(a) =>
+                        changePrimitiveAlias(family, idx, a)
+                      }
+                      onToggleIncluded={() =>
+                        togglePrimitiveInclude(family, idx)
+                      }
+                      onReset={() => resetPrimitiveHex(family, idx)}
                     />
                   ))}
                 </div>
@@ -190,16 +251,17 @@ export default function ColorsView({ query = "" }: { query?: string }) {
         </div>
       )}
 
+      {/* SEMANTICS TAB */}
       {activeTab === "semantics" && (
         <div className="overflow-auto space-y-3 pr-1">
           {Object.entries(semanticPresets).map(([group, map]) => (
             <Accordion
               key={group}
-              id={`acc-${group}`}
+              id={`sem-presets-${group}`}
               title={group}
               count={Object.keys(map).length}
-              isOpen={!!openFamilies[group]}
-              onToggle={() => toggleAccordion(group)}
+              isOpen={!!openSemantics[group]}
+              onToggle={() => toggleSemantic(group)}
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                 {Object.entries(map).map(([name, hex]) => (
@@ -207,7 +269,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                     key={`${group}-${name}`}
                     hex={hex}
                     originalHex={hex}
-                    alias={group.toLowerCase() + "-" + name}
+                    alias={`${group.toLowerCase()}-${name}`}
                     included={true}
                     onHexChange={() => {}}
                     onAliasChange={() => {}}
