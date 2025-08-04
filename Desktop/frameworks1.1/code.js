@@ -8,40 +8,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+
 // code.ts
 figma.showUI(__html__, { width: 1000, height: 700 });
+
 figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
     if (msg.type === "generate-variables") {
         const colors = msg.payload;
-        // Create a collection for primitives
+
+        // Create primitive collection
         const collection = figma.variables.createVariableCollection("Primitives");
-        // Ensure a mode exists
         const mode = collection.modes[0];
-        // Create and store primitive tokens
         const primitiveMap = new Map();
+
         for (const item of colors) {
-            const variable = figma.variables.createVariable(item.hex, collection, "COLOR");
+            const primitiveName = `${item.family}-${item.step}`;
+            const variable = figma.variables.createVariable(primitiveName, collection, "COLOR");
             variable.setValueForMode(mode.modeId, hexToRgb(item.hex));
             primitiveMap.set(item.hex, variable);
         }
-        // Create a second collection for semantic tokens
+
+        // Create semantic collection
         const semanticCollection = figma.variables.createVariableCollection("Semantic");
         const semanticMode = semanticCollection.modes[0];
+
         for (const item of colors) {
             const target = primitiveMap.get(item.hex);
-            if (!target)
-                continue;
-            const alias = figma.variables.createVariable(item.alias, semanticCollection, "COLOR");
-            alias.setValueForMode(semanticMode.modeId, {
+            if (!target) continue;
+            const semantic = figma.variables.createVariable(item.alias, semanticCollection, "COLOR");
+            semantic.setValueForMode(semanticMode.modeId, {
                 type: "VARIABLE_ALIAS",
                 id: target.id,
             });
         }
-        figma.notify("✅ Created variables and semantic aliases.");
+
+        figma.notify(`✅ Created ${colors.length} semantic colors.`);
         figma.closePlugin();
     }
 });
-// Utility function: Convert hex string to RGB variable value
+
+// Convert hex to RGB
 function hexToRgb(hex) {
     const clean = hex.replace("#", "");
     const bigint = parseInt(clean, 16);
