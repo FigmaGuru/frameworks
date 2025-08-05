@@ -14,7 +14,7 @@ export interface SwatchProps {
 }
 
 /**
- * Master Swatch component with hover-editable alias, revert, info tooltip removed,
+ * Master Swatch component with hover-editable alias, revert, theming support,
  * rounded corners, increased height, no internal checkbox (handled in Accordion).
  */
 const Swatch: React.FC<SwatchProps> = ({
@@ -28,15 +28,14 @@ const Swatch: React.FC<SwatchProps> = ({
   onReset,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  // only show revert when edited
   const isEdited = hex.toLowerCase() !== originalHex.toLowerCase();
 
   return (
     <label className="group w-32 h-32 relative overflow-hidden rounded-[16px] shadow-md cursor-pointer">
-      {/* color background */}
+      {/* dynamic color background */}
       <div className="absolute inset-0" style={{ backgroundColor: hex }} />
 
-      {/* click opens color picker */}
+      {/* color picker covers entire card */}
       <input
         type="color"
         value={hex}
@@ -44,35 +43,40 @@ const Swatch: React.FC<SwatchProps> = ({
         className="absolute inset-0 opacity-0 z-10"
       />
 
-      {/* Top-right revert */}
+      {/* Top-right revert button, shown only when edited */}
       {isEdited && (
         <button
           onClick={e => {
             e.stopPropagation();
             onReset();
           }}
-          className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-gray-100 z-20"
+          className="absolute top-2 right-2 p-1 bg-white dark:bg-gray-800 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 z-20"
           title="Revert to original"
         >
-          <Undo2 size={16} className="text-gray-600" />
+          <Undo2 size={16} className="text-gray-600 dark:text-gray-300" />
         </button>
       )}
 
-      {/* Bottom: hex badge and alias input */}
+      {/* Bottom area: hex badge and alias input */}
       <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center space-y-1 z-20">
-        {/* hex badge */}
-        <div className="bg-white text-black text-[10px] font-mono rounded-full px-2 py-0.5">
+        {/* Hex badge */}
+        <div className="bg-white dark:bg-gray-800 text-black dark:text-white text-[10px] font-mono rounded-full px-2 py-0.5">
           {hex.toUpperCase()}
         </div>
-        {/* alias input always visible, truncated */}
+
+        {/* Alias input (always visible) */}
         <input
           type="text"
           value={alias}
           onChange={e => onAliasChange(e.target.value)}
           onFocus={() => setIsEditing(true)}
           onBlur={() => setIsEditing(false)}
-          className={`w-full text-center font-semibold text-sm bg-white bg-opacity-80 rounded transition-border outline-none
-            ${isEditing ? "border border-gray-300" : "border-transparent"} truncate`}
+          className={`w-full text-center font-semibold text-sm 
+            bg-white bg-opacity-80 dark:bg-gray-800 dark:bg-opacity-60 
+            rounded transition-border outline-none truncate
+            ${isEditing
+              ? "border border-gray-300 dark:border-gray-600"
+              : "border-transparent"}`}
         />
       </div>
     </label>

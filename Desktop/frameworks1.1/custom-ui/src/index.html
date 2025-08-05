@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <title>Framework UI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Immediately set <html> class to “light” or “dark” before anything renders -->
+    <script>
+      ;(() => {
+        try {
+          const stored = localStorage.getItem("theme")
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+          const theme = stored === "light" || stored === "dark" ? stored : (prefersDark ? "dark" : "light")
+          document.documentElement.classList.add(theme)
+        } catch {}
+      })()
+    </script>
+
     <style>
       html,
       body,
@@ -18,7 +31,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="bg-background-light text-text-light dark:bg-background-dark dark:text-text-dark">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
