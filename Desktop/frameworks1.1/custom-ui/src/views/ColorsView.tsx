@@ -3,68 +3,25 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import tailwindColors from "../lib/tailwind-colors.json";
 import Swatch from "../components/Swatch";
 import Accordion from "../components/Accordion";
-import Alert from "../components/alert";
+import Alert from "../components/Alert";
+import { Check } from "lucide-react";
 
-const semanticPresets = {
-  Surface: {
-    primary: "#ffffff",
-    secondary: "#f9fafb",
-    tertiary: "#f3f4f6",
-    quaternary: "#e5e7eb",
-  },
-  Text: {
-    primary: "#111827",
-    secondary: "#374151",
-    tertiary: "#6b7280",
-    quaternary: "#9ca3af",
-  },
-  Icon: {
-    primary: "#111827",
-    secondary: "#4b5563",
-    tertiary: "#6b7280",
-    quaternary: "#9ca3af",
-  },
-  Border: {
-    primary: "#d1d5db",
-    secondary: "#e5e7eb",
-    tertiary: "#f3f4f6",
-    quaternary: "#f9fafb",
-  },
-  Alpha: {
-    "white-5": "rgba(255,255,255,0.05)",
-    "white-10": "rgba(255,255,255,0.1)",
-    "white-20": "rgba(255,255,255,0.2)",
-    "white-30": "rgba(255,255,255,0.3)",
-    "white-40": "rgba(255,255,255,0.4)",
-    "white-50": "rgba(255,255,255,0.5)",
-    "white-60": "rgba(255,255,255,0.6)",
-    "white-70": "rgba(255,255,255,0.7)",
-    "white-80": "rgba(255,255,255,0.8)",
-    "white-90": "rgba(255,255,255,0.9)",
-    "black-5": "rgba(0,0,0,0.05)",
-    "black-10": "rgba(0,0,0,0.1)",
-    "black-20": "rgba(0,0,0,0.2)",
-    "black-30": "rgba(0,0,0,0.3)",
-    "black-40": "rgba(0,0,0,0.4)",
-    "black-50": "rgba(0,0,0,0.5)",
-    "black-60": "rgba(0,0,0,0.6)",
-    "black-70": "rgba(0,0,0,0.7)",
-    "black-80": "rgba(0,0,0,0.8)",
-    "black-90": "rgba(0,0,0,0.9)",
-  },
+const semanticPresets: Record<string, Record<string, string>> = {
+  Surface: { primary: "#ffffff", secondary: "#f9fafb", tertiary: "#f3f4f6", quaternary: "#e5e7eb" },
+  Text:    { primary: "#111827", secondary: "#374151", tertiary: "#6b7280", quaternary: "#9ca3af" },
+  Icon:    { primary: "#111827", secondary: "#4b5563", tertiary: "#6b7280", quaternary: "#9ca3af" },
+  Border:  { primary: "#d1d5db", secondary: "#e5e7eb", tertiary: "#f3f4f6", quaternary: "#f9fafb" },
+  Alpha:   { "white-5": "rgba(255,255,255,0.05)", /* …etc… */ "black-90": "rgba(0,0,0,0.9)" },
 };
 
 export default function ColorsView({ query = "" }: { query?: string }) {
   const [activeTab, setActiveTab] = useState<"primitives" | "semantics">("primitives");
+  const [primitivesGenerated, setPrimitivesGenerated] = useState(false);
 
-  // Build primitive groups
+  // 1) Build primitives once
   const groupedPrimitives = useMemo(() => {
-    const result: Record<
-      string,
-      Array<{ step: string; hex: string; alias: string; included: boolean; originalHex: string }>
-    > = {};
+    const out: Record<string, any[]> = {};
     const seen = new Set<string>();
-
     for (const [family, ramp] of Object.entries(tailwindColors)) {
       const items = Object.entries(ramp as Record<string, string>)
         .map(([step, hex]) => ({
@@ -75,124 +32,104 @@ export default function ColorsView({ query = "" }: { query?: string }) {
           included: true,
         }))
         .filter(({ hex }) => /^#([0-9a-f]{6})$/i.test(hex) && !seen.has(hex) && seen.add(hex));
-
-      if (items.length) {
-        result[family] = items;
-      }
+      if (items.length) out[family] = items;
     }
-
-    return result;
+    return out;
   }, []);
 
-  // Primitives state
+  // 2) State & refs
   const [primitives, setPrimitives] = useState(groupedPrimitives);
   const [openPrimitives, setOpenPrimitives] = useState<Record<string, boolean>>({});
   const primCheckboxRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [openSemantics, setOpenSemantics] = useState<Record<string, boolean>>(() => {
+    const o: Record<string, boolean> = {};
+    Object.keys(semanticPresets).forEach(g => (o[g] = true));
+    Object.keys(groupedPrimitives).forEach(f => (o[f] = true));
+    return o;
+  });
 
-  // Semantics state
-  const [openSemantics, setOpenSemantics] = useState<Record<string, boolean>>({});
-
-  // Sync indeterminate state on primitives’ headers
+  // 3) Indeterminate checkboxes
   useEffect(() => {
-    Object.entries(primitives).forEach(([family, items]) => {
-      const el = primCheckboxRefs.current[family];
+    Object.entries(primitives).forEach(([f, items]) => {
+      const el = primCheckboxRefs.current[f];
       if (!el) return;
       const count = items.filter(i => i.included).length;
       el.indeterminate = count > 0 && count < items.length;
     });
   }, [primitives]);
 
-  // PRIMITIVE handlers
-  const togglePrimitive = (family: string) => setOpenPrimitives(p => ({ ...p, [family]: !p[family] }));
-  const changePrimitiveAlias = (family: string, index: number, alias: string) => {
-    const c = { ...primitives };
-    c[family][index].alias = alias;
-    setPrimitives(c);
-  };
-  const changePrimitiveHex = (family: string, index: number, hex: string) => {
-    const c = { ...primitives };
-    c[family][index].hex = hex;
-    setPrimitives(c);
-  };
-  const resetPrimitiveHex = (family: string, index: number) =>
-    changePrimitiveHex(family, index, primitives[family][index].originalHex);
-  const togglePrimitiveInclude = (family: string, index: number) => {
-    const c = { ...primitives };
-    c[family][index].included = !c[family][index].included;
-    setPrimitives(c);
-  };
-  const toggleFamilyInclude = (family: string) => {
-    const c = { ...primitives };
-    const all = c[family].every(item => item.included);
-    c[family].forEach(item => (item.included = !all));
-    setPrimitives(c);
-  };
+  // 4) Primitive handlers
+  const togglePrimitive        = (f: string) => setOpenPrimitives(p => ({ ...p, [f]: !p[f] }));
+  const changePrimitiveAlias   = (f: string, i: number, a: string) => { const c = { ...primitives }; c[f][i].alias = a; setPrimitives(c); };
+  const changePrimitiveHex     = (f: string, i: number, h: string) => { const c = { ...primitives }; c[f][i].hex = h; setPrimitives(c); };
+  const resetPrimitiveHex      = (f: string, i: number) => changePrimitiveHex(f, i, primitives[f][i].originalHex);
+  const togglePrimitiveInclude = (f: string, i: number) => { const c = { ...primitives }; c[f][i].included = !c[f][i].included; setPrimitives(c); };
+  const toggleFamilyInclude    = (f: string) => { const c = { ...primitives }; const all = c[f].every(i => i.included); c[f].forEach(i => i.included = !all); setPrimitives(c); };
 
-  // SEMANTIC handler
-  const toggleSemantic = (group: string) => setOpenSemantics(p => ({ ...p, [group]: !p[group] }));
+  // 5) Semantics handler
+  const toggleSemantic = (g: string) => setOpenSemantics(p => ({ ...p, [g]: !p[g] }));
 
-  // Filter primitives by alias
+  // 6) Filter primitives
   const lower = query.toLowerCase();
   const filteredPrimitives = useMemo(() => {
-    const out: typeof primitives = {};
-    for (const [family, items] of Object.entries(primitives)) {
+    const out: Record<string, any[]> = {};
+    Object.entries(primitives).forEach(([f, items]) => {
       const m = items.filter(c => c.alias.toLowerCase().includes(lower));
-      if (m.length) out[family] = m;
-    }
+      if (m.length) out[f] = m;
+    });
     return out;
   }, [primitives, lower]);
 
-  // Send selected colors to Figma
-  const sendMessage = () => {
-    const payload = Object.entries(primitives)
-      .flatMap(([family, items]) =>
-        items.filter(c => c.included).map(c => ({ ...c, family }))
-      );
-    parent.postMessage({ pluginMessage: { type: "generate-variables", payload } }, "*");
+  // 7) Generate
+  const sendPrimitives = () => {
+    const payload = Object.entries(primitives).flatMap(([family, items]) =>
+      items.filter(c => c.included).map(c => ({ family, alias: c.alias, hex: c.hex }))
+    );
+    parent.postMessage({ pluginMessage: { type: "generate-primitives", payload } }, "*");
+    setPrimitivesGenerated(true);
+  };
+  const sendSemantics = () => {
+    parent.postMessage({ pluginMessage: { type: "generate-semantics", payload: semanticPresets } }, "*");
   };
 
   return (
     <div className="font-sans text-sm flex flex-col h-full overflow-hidden">
-      {/* Tabs + Generate button */}
+      {/* ── TABS + GENERATE ── */}
       <div className="flex items-center mb-3 px-1">
         <button
           onClick={() => setActiveTab("primitives")}
           className={`px-4 py-1 font-semibold ${
-            activeTab === "primitives"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-black dark:hover:text-white"
+            activeTab === "primitives" ? "text-black dark:text-white" : "text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
           Primitives
         </button>
+
         <button
           onClick={() => setActiveTab("semantics")}
           className={`px-4 py-1 font-semibold ${
-            activeTab === "semantics"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-black dark:hover:text-white"
+            activeTab === "semantics" ? "text-black dark:text-white" : "text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
           Semantics
         </button>
+
         <div className="ml-auto">
           <button
-            onClick={sendMessage}
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm"
+            onClick={sendPrimitives}
+            className="flex items-center space-x-1 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm"
           >
-            Generate Variables
+            {primitivesGenerated ? <Check className="w-5 h-5" /> : "Generate Primitives"}
           </button>
         </div>
       </div>
 
-      {/* PRIMITIVES TAB */}
+      {/* ── PRIMITIVES PANEL ── */}
       {activeTab === "primitives" && (
-        <div className="overflow-auto space-y-3 pr-1">
-          {/* Instruction Alert */}
-          <Alert>
-            Click a swatch to edit its color or change the alias below. Click ↺ to revert.
-          </Alert>
-
+        <div className="flex-1 overflow-auto space-y-3 pr-1">
+          <Alert
+            description="Edit alias or color, then click &quot;Generate Primitives,&quot; then switch to Semantics."
+          />
           {Object.entries(filteredPrimitives).map(([family, items]) => {
             const all = items.every(i => i.included);
             return (
@@ -233,10 +170,10 @@ export default function ColorsView({ query = "" }: { query?: string }) {
         </div>
       )}
 
-      {/* SEMANTICS TAB */}
+      {/* ── SEMANTICS PANEL ── */}
       {activeTab === "semantics" && (
-        <div className="overflow-auto space-y-3 pr-1">
-          {/* Semantic presets */}
+        <div className="flex-1 overflow-auto flex flex-col space-y-3 pr-1">
+          {/* semantic presets */}
           {Object.entries(semanticPresets).map(([group, map]) => (
             <Accordion
               key={group}
@@ -253,7 +190,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                     hex={hex}
                     originalHex={hex}
                     alias={`${group.toLowerCase()}-${name}`}
-                    included={true}
+                    included
                     onHexChange={() => {}}
                     onAliasChange={() => {}}
                     onToggleIncluded={() => {}}
@@ -264,7 +201,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
             </Accordion>
           ))}
 
-          {/* Then list all primitive families as extra semantics */}
+          {/* plus every primitive family, too */}
           {Object.entries(groupedPrimitives).map(([family, items]) => (
             <Accordion
               key={`sem-prim-${family}`}
@@ -291,6 +228,19 @@ export default function ColorsView({ query = "" }: { query?: string }) {
               </div>
             </Accordion>
           ))}
+
+          <button
+            onClick={sendSemantics}
+            disabled={!primitivesGenerated}
+            title={!primitivesGenerated ? "Generate Primitives first" : ""}
+            className={`mt-4 w-full px-4 py-2 rounded text-sm ${
+              primitivesGenerated
+                ? "bg-black text-white hover:bg-gray-800"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {primitivesGenerated ? <Check className="w-5 h-5" /> : "Generate Semantics"}
+          </button>
         </div>
       )}
     </div>

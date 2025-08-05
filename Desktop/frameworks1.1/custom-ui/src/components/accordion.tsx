@@ -2,17 +2,11 @@
 import React from "react";
 
 interface AccordionProps {
-  /** Unique id for aria-controls */
   id: string;
-  /** Header title */
   title: string;
-  /** Number badge */
   count: number;
-  /** Is panel open */
   isOpen: boolean;
-  /** Toggle handler */
   onToggle: () => void;
-  /** Panel content */
   children: React.ReactNode;
 }
 
@@ -25,7 +19,7 @@ export default function Accordion({
   children,
 }: AccordionProps) {
   return (
-    <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-visible">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-b dark:border-b-gray-600"
@@ -59,8 +53,10 @@ export default function Accordion({
 
       <div
         id={id}
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? "max-h-[2000px]" : "max-h-0"
+        className={`transition-all duration-300 ease-in-out ${
+          isOpen
+            ? "max-h-[2000px] overflow-visible"
+            : "max-h-0 overflow-hidden"
         }`}
       >
         {children}
