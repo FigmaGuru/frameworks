@@ -2,8 +2,8 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import tailwindColors from "../lib/tailwind-colors.json";
 import Swatch from "../components/Swatch";
-import Accordion from "../components/Accordion";
-import Alert from "../components/Alert";
+import Accordion from "../components/accordion";
+import Alert from "../components/alert";
 import { Check } from "lucide-react";
 
 const semanticPresets: Record<string, Record<string, string>> = {
@@ -140,14 +140,6 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                 count={items.length}
                 isOpen={!!openPrimitives[family]}
                 onToggle={() => togglePrimitive(family)}
-                headerControls={
-                  <input
-                    type="checkbox"
-                    checked={all}
-                    ref={el => (primCheckboxRefs.current[family] = el)}
-                    onChange={() => toggleFamilyInclude(family)}
-                  />
-                }
               >
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                   {items.map((item, idx) => (
