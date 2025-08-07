@@ -2,32 +2,33 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import tailwindColors from "../lib/tailwind-colors.json";
 import Swatch from "../components/Swatch";
-import Accordion from "../components/Accordion";
+import Accordion from "../components/accordion";
 
-const semanticPresets = {
+// Static semantic groups with primitive aliases
+const baseSemanticPresets: Record<string, Record<string, string>> = {
   Surface: {
-    primary: "#ffffff",
-    secondary: "#f9fafb",
-    tertiary: "#f3f4f6",
-    quaternary: "#e5e7eb",
+    primary: "gray-50",
+    secondary: "gray-100", 
+    tertiary: "gray-200",
+    quaternary: "gray-300",
   },
   Text: {
-    primary: "#111827",
-    secondary: "#374151",
-    tertiary: "#6b7280",
-    quaternary: "#9ca3af",
+    primary: "gray-900",
+    secondary: "gray-700",
+    tertiary: "gray-500",
+    quaternary: "gray-400",
   },
   Icon: {
-    primary: "#111827",
-    secondary: "#4b5563",
-    tertiary: "#6b7280",
-    quaternary: "#9ca3af",
+    primary: "gray-900",
+    secondary: "gray-600",
+    tertiary: "gray-500",
+    quaternary: "gray-400",
   },
   Border: {
-    primary: "#d1d5db",
-    secondary: "#e5e7eb",
-    tertiary: "#f3f4f6",
-    quaternary: "#f9fafb",
+    primary: "gray-300",
+    secondary: "gray-200",
+    tertiary: "gray-100",
+    quaternary: "gray-50",
   },
   Alpha: {
     "white-5": "rgba(255,255,255,0.05)",
@@ -58,20 +59,13 @@ export default function ColorsView({ query = "" }: { query?: string }) {
     "primitives"
   );
 
+  // State for editable semantic names
+  const [semanticNames, setSemanticNames] = useState<Record<string, Record<string, string>>>({});
+
   // Build primitive groups
   const groupedPrimitives = useMemo(() => {
-    const result: Record<
-      string,
-      Array<{
-        step: string;
-        hex: string;
-        alias: string;
-        included: boolean;
-        originalHex: string;
-      }>
-    > = {};
+    const result: Record<string, Array<{ step: string; hex: string; alias: string; included: boolean; originalHex: string }>> = {};
     const seen = new Set<string>();
-
     Object.entries(tailwindColors).forEach(([family, ramp]) => {
       const items = Object.entries(ramp as Record<string, string>)
         .map(([step, hex]) => ({
@@ -81,29 +75,165 @@ export default function ColorsView({ query = "" }: { query?: string }) {
           alias: `${family}-${step}`,
           included: true,
         }))
-        .filter(
-          ({ hex }) =>
-            /^#([0-9a-f]{6})$/i.test(hex) && !seen.has(hex) && seen.add(hex)
-        );
+        .filter(({ hex }) => /^#([0-9a-f]{6})$/i.test(hex) && !seen.has(hex) && seen.add(hex));
       if (items.length) result[family] = items;
     });
-
     return result;
   }, []);
 
-  // Primitives state
+  // Create a map of primitive aliases to hex values for semantic resolution
+  const primitiveAliasMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    Object.entries(groupedPrimitives).forEach(([family, items]) => {
+      items.forEach(({ alias, hex }) => {
+        map[alias] = hex;
+      });
+    });
+    return map;
+  }, [groupedPrimitives]);
+
+  // Generate comprehensive semantic presets that alias to primitives
+  const generatedSemanticPresets = useMemo(() => {
+    const semanticGroups: Record<string, Record<string, string>> = {
+      // Brand colors - using primary brand colors
+      Brand: {
+        primary: "blue-600",
+        secondary: "blue-500", 
+        tertiary: "blue-400",
+        accent: "blue-700",
+      },
+      // Status colors
+      Status: {
+        success: "green-600",
+        warning: "yellow-500",
+        error: "red-600",
+        info: "blue-500",
+      },
+      // Interactive states
+      Interactive: {
+        hover: "gray-100",
+        active: "gray-200",
+        focus: "blue-100",
+        disabled: "gray-100",
+      },
+      // Feedback colors
+      Feedback: {
+        positive: "green-500",
+        negative: "red-500",
+        neutral: "gray-500",
+        attention: "yellow-500",
+      },
+      // Data visualization
+      Data: {
+        chart1: "blue-500",
+        chart2: "green-500", 
+        chart3: "yellow-500",
+        chart4: "red-500",
+        chart5: "purple-500",
+        chart6: "pink-500",
+      },
+      // Elevation/shadows
+      Elevation: {
+        level1: "gray-50",
+        level2: "gray-100",
+        level3: "gray-200",
+        level4: "gray-300",
+      },
+      // Semantic text variations
+      TextSemantic: {
+        link: "blue-600",
+        success: "green-600",
+        warning: "yellow-600",
+        error: "red-600",
+        muted: "gray-500",
+      },
+      // Background variations
+      Background: {
+        page: "gray-50",
+        card: "white",
+        overlay: "rgba(0,0,0,0.5)",
+        modal: "white",
+      },
+    };
+
+    // Add primitive family semantics (existing functionality)
+    Object.entries(groupedPrimitives).forEach(([family, items]) => {
+      semanticGroups[family] = items.reduce((map, { alias, hex }) => {
+        map[alias] = hex;
+        return map;
+      }, {} as Record<string, string>);
+    });
+
+    return semanticGroups;
+  }, [groupedPrimitives]);
+
+  // Resolve semantic aliases to actual hex values
+  const resolvedSemanticPresets = useMemo(() => {
+    const resolved: Record<string, Record<string, string>> = {};
+    
+    // Resolve base semantic presets
+    Object.entries(baseSemanticPresets).forEach(([group, colors]) => {
+      resolved[group] = {};
+      Object.entries(colors).forEach(([name, value]) => {
+        // If it's a primitive alias, resolve it; otherwise keep as is (for rgba values)
+        const resolvedValue = primitiveAliasMap[value] || value;
+        resolved[group][name] = resolvedValue;
+      });
+    });
+
+    // Resolve generated semantic presets
+    Object.entries(generatedSemanticPresets).forEach(([group, colors]) => {
+      resolved[group] = {};
+      Object.entries(colors).forEach(([name, value]) => {
+        // If it's a primitive alias, resolve it; otherwise keep as is
+        const resolvedValue = primitiveAliasMap[value] || value;
+        resolved[group][name] = resolvedValue;
+      });
+    });
+
+    return resolved;
+  }, [baseSemanticPresets, generatedSemanticPresets, primitiveAliasMap]);
+
+  // Merge all semantic groups
+  const semanticPresets = useMemo(
+    () => resolvedSemanticPresets,
+    [resolvedSemanticPresets]
+  );
+
+  // Initialize semantic names from presets
+  useEffect(() => {
+    const initialNames: Record<string, Record<string, string>> = {};
+    
+    // Initialize from base semantic presets
+    Object.entries(baseSemanticPresets).forEach(([group, colors]) => {
+      initialNames[group] = {};
+      Object.keys(colors).forEach((name) => {
+        initialNames[group][name] = name;
+      });
+    });
+
+    // Initialize from generated semantic presets
+    Object.entries(generatedSemanticPresets).forEach(([group, colors]) => {
+      if (!initialNames[group]) {
+        initialNames[group] = {};
+      }
+      Object.keys(colors).forEach((name) => {
+        if (!initialNames[group][name]) {
+          initialNames[group][name] = name;
+        }
+      });
+    });
+
+    setSemanticNames(initialNames);
+  }, [generatedSemanticPresets]);
+
+  // State for primitives and semantics
   const [primitives, setPrimitives] = useState(groupedPrimitives);
-  const [openPrimitives, setOpenPrimitives] = useState<
-    Record<string, boolean>
-  >({});
+  const [openPrimitives, setOpenPrimitives] = useState<Record<string, boolean>>({});
   const primCheckboxRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [openSemantics, setOpenSemantics] = useState<Record<string, boolean>>({});
 
-  // Semantics accordions state
-  const [openSemantics, setOpenSemantics] = useState<
-    Record<string, boolean>
-  >({});
-
-  // Keep header checkbox indeterminate
+  // Indeterminate state for primitives
   useEffect(() => {
     Object.entries(primitives).forEach(([family, items]) => {
       const el = primCheckboxRefs.current[family];
@@ -113,9 +243,8 @@ export default function ColorsView({ query = "" }: { query?: string }) {
     });
   }, [primitives]);
 
-  // PRIMITIVE handlers
-  const togglePrimitive = (f: string) =>
-    setOpenPrimitives((p) => ({ ...p, [f]: !p[f] }));
+  // Handlers
+  const togglePrimitive = (f: string) => setOpenPrimitives((p) => ({ ...p, [f]: !p[f] }));
   const changePrimitiveAlias = (f: string, i: number, v: string) => {
     const c = { ...primitives };
     c[f][i].alias = v;
@@ -126,8 +255,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
     c[f][i].hex = h;
     setPrimitives(c);
   };
-  const resetPrimitiveHex = (f: string, i: number) =>
-    changePrimitiveHex(f, i, primitives[f][i].originalHex);
+  const resetPrimitiveHex = (f: string, i: number) => changePrimitiveHex(f, i, primitives[f][i].originalHex);
   const togglePrimitiveInclude = (f: string, i: number) => {
     const c = { ...primitives };
     c[f][i].included = !c[f][i].included;
@@ -139,19 +267,14 @@ export default function ColorsView({ query = "" }: { query?: string }) {
     c[f].forEach((item) => (item.included = !all));
     setPrimitives(c);
   };
+  const toggleSemantic = (g: string) => setOpenSemantics((p) => ({ ...p, [g]: !p[g] }));
 
-  // SEMANTICS handler
-  const toggleSemantic = (f: string) =>
-    setOpenSemantics((p) => ({ ...p, [f]: !p[f] }));
-
-  // Filter primitives by alias
+  // Filter primitives by search
   const search = query.toLowerCase();
   const filteredPrimitives = useMemo(() => {
     const out: typeof primitives = {};
     Object.entries(primitives).forEach(([family, items]) => {
-      const m = items.filter((c) =>
-        c.alias.toLowerCase().includes(search)
-      );
+      const m = items.filter((c) => c.alias.toLowerCase().includes(search));
       if (m.length) out[family] = m;
     });
     return out;
@@ -159,13 +282,49 @@ export default function ColorsView({ query = "" }: { query?: string }) {
 
   // Send to Figma
   const sendMessage = () => {
-    const payload = Object.entries(primitives).flatMap(([family, items]) =>
+    const primitivePayload = Object.entries(primitives).flatMap(([family, items]) =>
       items.filter((c) => c.included).map((c) => ({ ...c, family }))
     );
-    parent.postMessage(
-      { pluginMessage: { type: "generate-variables", payload } },
-      "*"
+    
+    // Create semantic payload that references primitive hex values
+    const semanticsPayload = Object.entries(semanticPresets).flatMap(([group, map]) =>
+      Object.entries(map).map(([name, hex]) => {
+        // Find the original primitive alias if this semantic color aliases to a primitive
+        const originalAlias = Object.entries(baseSemanticPresets).find(([g, colors]) => 
+          g === group && colors[name]
+        )?.[1]?.[name] || 
+        Object.entries(generatedSemanticPresets).find(([g, colors]) => 
+          g === group && colors[name]
+        )?.[1]?.[name];
+        
+        // If this semantic color aliases to a primitive, use the primitive's hex value
+        // This ensures the Figma plugin can match it with the primitive
+        const targetHex = originalAlias && primitiveAliasMap[originalAlias] ? primitiveAliasMap[originalAlias] : hex;
+        
+        // Use custom semantic name if available, otherwise use original name
+        const customName = semanticNames[group]?.[name] || name;
+        
+        return { 
+          alias: `${group.toLowerCase()}-${customName}`, 
+          hex: targetHex, // Use the primitive hex value for matching
+          semantic: true,
+          primitiveAlias: originalAlias || null,
+          group: group
+        };
+      })
     );
+    
+    const fullPayload = [...primitivePayload, ...semanticsPayload];
+    
+    // Debug logging
+    console.log('=== PAYLOAD DEBUG ===');
+    console.log('Primitives:', primitivePayload.length);
+    console.log('Semantics:', semanticsPayload.length);
+    console.log('Sample primitive:', primitivePayload[0]);
+    console.log('Sample semantic:', semanticsPayload[0]);
+    console.log('Total payload size:', fullPayload.length);
+    
+    parent.postMessage({ pluginMessage: { type: "generate-variables", payload: fullPayload } }, "*");
   };
 
   return (
@@ -178,8 +337,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
             activeTab === "primitives"
               ? "border-black text-black"
               : "border-transparent text-gray-400 hover:text-black"
-          }`}
-        >
+          }`}>
           Primitives
         </button>
         <button
@@ -188,8 +346,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
             activeTab === "semantics"
               ? "border-black text-black"
               : "border-transparent text-gray-400 hover:text-black"
-          }`}
-        >
+          }`}>
           Semantics
         </button>
         <div className="ml-auto">
@@ -215,14 +372,6 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                 count={items.length}
                 isOpen={!!openPrimitives[family]}
                 onToggle={() => togglePrimitive(family)}
-                headerControls={
-                  <input
-                    type="checkbox"
-                    checked={all}
-                    ref={(el) => (primCheckboxRefs.current[family] = el)}
-                    onChange={() => toggleFamilyInclude(family)}
-                  />
-                }
               >
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                   {items.map((item, idx) => (
@@ -232,15 +381,9 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                       originalHex={item.originalHex}
                       alias={item.alias}
                       included={item.included}
-                      onHexChange={(h) =>
-                        changePrimitiveHex(family, idx, h)
-                      }
-                      onAliasChange={(a) =>
-                        changePrimitiveAlias(family, idx, a)
-                      }
-                      onToggleIncluded={() =>
-                        togglePrimitiveInclude(family, idx)
-                      }
+                      onHexChange={(h) => changePrimitiveHex(family, idx, h)}
+                      onAliasChange={(a) => changePrimitiveAlias(family, idx, a)}
+                      onToggleIncluded={() => togglePrimitiveInclude(family, idx)}
                       onReset={() => resetPrimitiveHex(family, idx)}
                     />
                   ))}
@@ -264,19 +407,29 @@ export default function ColorsView({ query = "" }: { query?: string }) {
               onToggle={() => toggleSemantic(group)}
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
-                {Object.entries(map).map(([name, hex]) => (
-                  <Swatch
-                    key={`${group}-${name}`}
-                    hex={hex}
-                    originalHex={hex}
-                    alias={`${group.toLowerCase()}-${name}`}
-                    included={true}
-                    onHexChange={() => {}}
-                    onAliasChange={() => {}}
-                    onToggleIncluded={() => {}}
-                    onReset={() => {}}
-                  />
-                ))}
+                {Object.entries(map).map(([name, hex]) => {
+                  const customName = semanticNames[group]?.[name] || name;
+                  return (
+                    <Swatch
+                      key={`${group}-${name}`}
+                      hex={hex}
+                      originalHex={hex}
+                      alias={customName}
+                      included={true}
+                      onHexChange={() => {}}
+                      onAliasChange={(a) => {
+                        const newSemanticNames = { ...semanticNames };
+                        if (!newSemanticNames[group]) {
+                          newSemanticNames[group] = {};
+                        }
+                        newSemanticNames[group][name] = a;
+                        setSemanticNames(newSemanticNames);
+                      }}
+                      onToggleIncluded={() => {}}
+                      onReset={() => {}}
+                    />
+                  );
+                })}
               </div>
             </Accordion>
           ))}
