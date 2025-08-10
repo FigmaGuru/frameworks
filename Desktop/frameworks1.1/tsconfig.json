@@ -1,10 +1,24 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "ES2017",
+    "lib": ["ES2017"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "types": ["@figma/plugin-typings"]
   },
-  "include": ["code.ts"]
+  "include": [
+    "code.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "custom-ui",
+    "dist"
+  ]
 }

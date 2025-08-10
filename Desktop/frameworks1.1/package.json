@@ -1,0 +1,20 @@
+{
+  "name": "figma-framework-plugin",
+  "version": "1.0.0",
+  "description": "Figma plugin for generating design tokens as local variables",
+  "main": "dist/code.js",
+  "scripts": {
+    "build": "tsc && npm run build:ui",
+    "build:ui": "cd custom-ui && npm run build",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist && cd custom-ui && rm -rf dist",
+    "install:all": "npm install && cd custom-ui && npm install"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.0.0",
+    "typescript": "^5.9.2"
+  },
+  "keywords": ["figma", "plugin", "design-tokens", "variables"],
+  "author": "Framework Team",
+  "license": "MIT"
+}

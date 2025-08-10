@@ -178,6 +178,32 @@ export default function SpacingView({ query = "" }: { query?: string }) {
     return initial;
   });
 
+  // Find semantic tokens that use primitive spacing values
+  const semanticToPrimitiveMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    
+    // Check each semantic token against primitives
+    Object.entries(semanticSpacing).forEach(([category, tokens]) => {
+      Object.entries(tokens).forEach(([name, value]) => {
+        const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
+        const matchingPrimitives: string[] = [];
+        
+        // Find primitives that match this semantic value
+        Object.entries(primitiveSpacing).forEach(([key, primitiveValue]) => {
+          if (primitiveValue === value) {
+            matchingPrimitives.push(`space-${key}`);
+          }
+        });
+        
+        if (matchingPrimitives.length > 0) {
+          map[semanticName] = matchingPrimitives;
+        }
+      });
+    });
+    
+    return map;
+  }, []);
+
   // Filter primitives based on query
   const lower = query.toLowerCase();
   const filteredPrimitives = useMemo(() => {
@@ -213,6 +239,7 @@ export default function SpacingView({ query = "" }: { query?: string }) {
         value: string;
         type: "primitive" | "semantic";
         category?: string;
+        relatedPrimitives?: string[];
       }> = [];
 
       // Add included primitives
@@ -231,11 +258,13 @@ export default function SpacingView({ query = "" }: { query?: string }) {
       // Add all semantic tokens
       Object.entries(semanticSpacing).forEach(([category, tokens]) => {
         Object.entries(tokens).forEach(([name, value]) => {
+          const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
           variables.push({
-            name: `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`,
+            name: semanticName,
             value,
             type: "semantic",
-            category
+            category,
+            relatedPrimitives: semanticToPrimitiveMap[semanticName] || []
           });
         });
       });
@@ -292,13 +321,15 @@ export default function SpacingView({ query = "" }: { query?: string }) {
             const semanticCount = Object.entries(semanticSpacing).reduce((sum, [_, tokens]) => 
               sum + Object.keys(tokens).length, 0
             );
+            const totalCount = primitiveCount + semanticCount;
             
             return (
               <button
                 onClick={generateVariables}
                 className="px-4 py-1 bg-black dark:bg-white text-white dark:text-black rounded text-xs hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                title={`Generate ${totalCount} variables (${primitiveCount} primitives + ${semanticCount} semantics)`}
               >
-                Generate
+                Generate {totalCount}
               </button>
             );
           })()}
@@ -311,7 +342,7 @@ export default function SpacingView({ query = "" }: { query?: string }) {
           <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-600 dark:text-gray-400" style={{fontSize: '12px'}}>
             {(() => {
               const totalTokens = Object.values(filteredPrimitives).reduce((sum, items) => sum + items.length, 0);
-              return `Primitive spacing scale (${totalTokens} tokens available).`;
+              return `Primitive spacing scale (${totalTokens} tokens available). Select which ones to include in your design system.`;
             })()}
           </div>
           
@@ -345,7 +376,7 @@ export default function SpacingView({ query = "" }: { query?: string }) {
       {activeTab === "semantics" && (
         <div className="flex-1 overflow-auto space-y-3 pr-1">
           <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-600 dark:text-gray-400" style={{fontSize: '12px'}}>
-            Semantic spacing tokens organized by use case and context.
+            Semantic spacing tokens organized by use case and context. These automatically align with primitive values.
           </div>
 
           {Object.entries(semanticSpacing).map(([category, tokens]) => (
@@ -358,17 +389,23 @@ export default function SpacingView({ query = "" }: { query?: string }) {
               onToggle={() => toggleSemantic(category)}
             >
               <div className="flex flex-wrap gap-2 p-4">
-                {Object.entries(tokens).map(([name, value]) => (
-                  <SpacingToken
-                    key={`${category}-${name}`}
-                    value={value}
-                    alias={`${category.toLowerCase().replace(/\s+/g, '-')}-${name}`}
-                    included={true}
-                    type="semantic"
-                    category={category}
-                    onToggleIncluded={() => {}}
-                  />
-                ))}
+                {Object.entries(tokens).map(([name, value]) => {
+                  const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
+                  const relatedPrimitives = semanticToPrimitiveMap[semanticName] || [];
+                  
+                  return (
+                    <div key={`${category}-${name}`} className="relative">
+                      <SpacingToken
+                        value={value}
+                        alias={semanticName}
+                        included={true}
+                        type="semantic"
+                        category={category}
+                        onToggleIncluded={() => {}}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </Accordion>
           ))}

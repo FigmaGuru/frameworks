@@ -1,0 +1,208 @@
+Figma Plugin Best Practices for Local Variables and Tailwind Token Mapping
+
+Developing a Figma plugin for design tokens requires careful planning in how you create and manage local variables (colors, spacing, typography, radii, etc.) and how you map them to Tailwind CSS-compatible tokens. This guide provides a comprehensive, practical checklist of best practices – from using the Figma Plugin API to handling multi-theme tokens – to help you build a performant, maintainable plugin. Each section includes tips, code examples, and common pitfalls, organized for easy scanning.
+
+Setting Up Figma Variables via Plugin API
+	•	Use Collections to Organize Tokens: Figma variables are grouped into collections, each with one or more modes (e.g. light/dark themes). Use figma.variables.createVariableCollection(name) to create a new collection for related tokens (e.g. “Colors”, “Spacing”) ￼. Keep different token types in separate collections for clarity – for example, don’t mix color and spacing tokens in one collection ￼. Name collections descriptively in Title Case (e.g. “Color”, “Radius”) so their purpose is clear ￼.
+	•	Create Variables with Appropriate Types: For each design token, call figma.variables.createVariable(tokenName, collection, type) where type is "COLOR", "FLOAT", "STRING", etc., matching the value (color hex, number, text, etc.) ￼. For example, create color variables for palette values, number variables for spacing or radii, and string variables for font families or styles. Ensure the type matches the intended usage – a variable’s type is fixed on creation, so choose correctly (e.g. use FLOAT for numeric tokens like spacing or opacity).
+	•	Define Modes for Themes: If supporting multiple themes (like light and dark), add modes to the collection and assign values per mode. For example, you might add a "dark" mode to a “Semantic Colors” collection: const darkModeId = collection.addMode("dark") ￼. Then set each variable’s value for each mode with variable.setValueForMode(modeId, value). For instance, a text-primary color variable can be #000 in light mode and #FFF in dark mode ￼. Figma allows up to four modes per collection (e.g. Light, Dark, etc.), so use modes to encode theme variations of the same token.
+	•	Example – Creating a Token: The snippet below demonstrates creating a collection and variable, then assigning values for two modes (light/dark):
+
+const collection = figma.variables.createVariableCollection("Semantic Colors");
+collection.renameMode(collection.modes[0].modeId, "light");
+const colorVar = figma.variables.createVariable("text-primary", collection, "COLOR");
+const lightModeId = collection.modes[0].modeId;
+const darkModeId = collection.addMode("dark");
+colorVar.setValueForMode(lightModeId, { r: 0, g: 0, b: 0 });    // #000 for light
+colorVar.setValueForMode(darkModeId, { r: 1, g: 1, b: 1 });     // #FFF for dark
+
+This creates a “text-primary” color variable in a collection named “Semantic Colors,” with appropriate values for light and dark modes ￼.
+
+	•	Mapping to Tailwind Scales: For Tailwind compatibility, mirror Tailwind’s naming and scales in your Figma variables:
+	•	Color Palette (Primitives): Create a color primitives collection for raw palette values (e.g. red/100, red/200, …, blue/500). Name these by color name and numeric scale, just like Tailwind (red-500, blue-500, etc.), for easy mapping ￼. These serve as the single source of truth for color values.
+	•	Semantic Colors: Create a separate semantic collection for usage-based color tokens (e.g. background-brand, text-danger). These semantic variables will alias the primitives and are the ones actually applied in designs ￼ ￼. For example, background-brand in light mode might alias blue-500, and in dark mode alias blue-300. Use the Plugin API to create such an alias mapping (e.g. figma.variables.createVariableAlias(baseVar)) when setting the semantic variable’s mode value – this binds the semantic token to the underlying primitive ￼.
+	•	Spacing Scale: Similarly, for spacing, create variables like spacing-1, spacing-2, etc., corresponding to Tailwind’s spacing (e.g. 0.25rem, 0.5rem). Use FLOAT type for these. You can group them under a “Spacing” collection and even scope them to layout fields (see Variable Scopes below).
+	•	Typography Tokens: Tailwind font sizes and families can be captured with variables too. For font sizes/line-heights use FLOAT (with scope to text properties), and for font families, use STRING. For example, a font-base variable for base font size, or a font-family-sans string variable for the font stack. If you apply these to actual text nodes, remember to load the corresponding fonts with figma.loadFontAsync before binding the variable.
+	•	Border Radius, Etc.: Define radius tokens (e.g. radius-sm, radius-md for small/medium border radius values) as FLOAT variables in a “Radius” collection. Tailwind’s small (e.g. 0.125rem) and large radii can be captured here. This makes it easy to apply consistent corner rounding throughout the design.
+	•	Set Variable Scopes for Usability: Figma variables can be scoped to specific properties so they only appear in relevant context (to avoid bloating pickers) ￼ ￼. For each variable, adjust variable.scopes:
+	•	Color variables: use scopes like "ALL_FILLS" or "STROKE_COLOR" so they show up only in color pickers (or specifically for fills vs strokes) ￼.
+	•	Spacing (number) variables: scope to layout or sizing fields, e.g. "WIDTH_HEIGHT", "GAP", or "CORNER_RADIUS" for radius tokens ￼.
+	•	Typography variables: scope font family strings to "FONT_FAMILY", font size to "FONT_SIZE", etc., so that they appear in the font/size dropdowns ￼.
+	•	By setting scopes (or using the ALL_SCOPES default for general-purpose tokens), you declutter the UI and ensure designers see the right tokens in the right context ￼. For example, a text-danger color token might be scoped to text fills only, while a radius-md token is scoped to corner radius fields.
+	•	Update vs Create Logic: Implement your plugin to intelligently update existing variables or styles instead of blindly duplicating. Use methods like figma.variables.getLocalVariablesAsync(type) to fetch existing tokens ￼. For each token from Tailwind config, check if it exists by name (and perhaps type) in the corresponding collection:
+	•	If found, update its value(s) using setValueForMode (and maybe update the name if your naming scheme changed).
+	•	If not found, create it with createVariable.
+	•	This approach prevents duplicate tokens and preserves any references in the design. The Reddit community plugin “Tailwind Tokens” follows a similar “safe update” strategy – it updates existing styles without overwriting, only adding what’s missing ￼ ￼.
+	•	Preserve Links and References: Avoid deleting and re-creating variables whenever possible, since new variables have new IDs and would disconnect any bound elements. Instead, update values or rename the existing variable (you can directly set variable.name to rename a token without breaking bindings ￼). If you must remove tokens (e.g. ones no longer in the Tailwind config), consider providing a way to clean them up carefully (perhaps listing them for user confirmation before removal). Use variable.remove() to delete a variable if needed ￼, but be cautious – this will remove it from any nodes or styles using it.
+
+Tailwind-Compatible Naming Conventions
+	•	Follow Tailwind’s Token Naming: Align your Figma variable names with the Tailwind CSS token names for easy mental mapping. For example:
+	•	Colors: use the format colorName-scale (e.g. blue-500) or a slash naming if you prefer grouping (e.g. blue/500). Consistency is key – pick one format and stick to it.
+	•	Semantic colors: use functional names like primary, primary-hover, danger, etc., possibly with state suffixes. E.g. primary-default and primary-hover. This communicates intent (a designer seeing primary-hover knows it’s the hover state for primary) ￼.
+	•	Spacing: use numeric steps (spacing-1, spacing-2, or space-1 etc.) that correspond to the Tailwind spacing scale. If Tailwind’s default uses 0.25rem as 1, ensure your spacing-1 variable = 2px (assuming 1rem=16px). Document the scale in your plugin README or UI for clarity.
+	•	Font sizes: Tailwind names like text-sm, text-lg can be mirrored (e.g. a variable text-sm for that font size). Or use numeric scale (e.g. font-100, font-200). Semantic naming like font-body, font-heading is also useful if mapping to specific use cases.
+	•	Radii: Tailwind uses names like rounded-sm, rounded-lg. Your variables might just be numeric (radius-1, radius-2 etc.) or semantic (radius-sm, radius-lg). Ensure they’re descriptive of size progression.
+	•	Consistent Case & Style: Use a single naming style throughout – e.g. kebab-case (lowercase with hyphens) which is both Tailwind-friendly and human-readable ￼. Avoid mixing different separators or cases (don’t sometimes use camelCase or underscores). For example, prefer primary-hover over PrimaryHover or primary_hover. Kebab-case variable names will display clearly in Figma’s UI and sort alphabetically in a logical way.
+	•	Separate Functional vs Scaled Names: A critical naming best practice is not to mix semantic names with scale-based names in the same group or collection ￼. In practice:
+	•	Keep raw scale tokens (like palette colors or numeric steps) separate from semantic tokens. As noted above, use a two-collection approach for colors: one for pure color values by name/number, another for semantic color roles ￼ ￼. This avoids confusion and makes maintenance easier – you can update the primitive palette independently of how those colors are used semantically.
+	•	The same logic can apply to spacing: if you have purely numeric spacing tokens (e.g. spacing-8 = 2rem), keep those grouped, and if you also have semantic spacing (like a variable for “gutter” or “layout-padding”), keep those separate or clearly prefixed.
+	•	Example: You might have Colors/Red/500 as a primitive, and separately Semantic Colors/Error which in light mode is an alias to Red/500. This clear separation mirrors how design tokens are structured in code (primitives vs aliases) and reduces naming collisions.
+	•	Avoid Overly Vague or Proprietary Names: Steer clear of naming collections or variables with internal jargon or overly abstract terms like “atom” or “molecule” for tokens ￼. Instead, use straightforward names that communicate purpose (e.g. Button/Background or Elevation/Level-1). This clarity will help both designers and developers. Reserve any complex naming schemes for internal logic, not the user-facing token names.
+	•	Document the Scale: If your plugin generates tokens, consider providing a quick reference of what each scale value means (especially for spacing and sizing). For example, a tooltip or README could note “spacing-4 = 1rem (16px) by default”. This can reduce guesswork for designers using the tokens.
+
+Plugin UI and Figma Document Interaction
+
+A successful plugin ensures smooth communication between its UI (the iframe window) and the Figma document (the main plugin code). Here are best practices for seamless interaction:
+	•	Initialize the UI Cleanly: Use figma.showUI(htmlPage, { width, height }) to load your React/HTML UI. Keep the UI panel reasonably sized to avoid obscuring the canvas (it should feel like a natural extension of Figma’s interface). For a React + TypeScript setup, you will bundle your UI into an HTML file; ensure your manifest.json points to the correct ui.html and code.js bundle outputs ￼ ￼.
+	•	Establish a Messaging Protocol: Communicate between the plugin code and UI via the postMessage API:
+	•	From UI to main: call parent.postMessage({ pluginMessage: {...} }, '*') in your UI (e.g. when a button is clicked) to send a message to the main code. Make sure the structure includes a pluginMessage property as shown.
+	•	In main code, listen with figma.ui.onmessage (or figma.ui.on('message', ...)) to handle incoming messages. For example, figma.ui.onmessage = msg => { if(msg.type === 'generateTokens'){ ... } }. This will capture the pluginMessage object sent from UI ￼ ￼.
+	•	From main to UI: use figma.ui.postMessage(data) to send any data or acknowledgments back to the UI window ￼. This can be used to send results (like a success confirmation or a list of created tokens) or updates (like progress).
+	•	In the UI, register an event listener to receive messages from main. A common pitfall is to use the wrong listener. Use window.onmessage or window.addEventListener('message', ...) in your React component to catch messages ￼. Access the payload via event.data.pluginMessage (it will contain whatever was sent). For example:
+
+useEffect(() => {
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+    console.log('Message from main:', msg);
+    // handle the message (update state, show notification, etc.)
+  };
+}, []);
+
+Ensure this runs after the component mounts (using useEffect with no dependencies or in componentDidMount) ￼ ￼. This correct setup will reliably capture messages. (Using just a bare onmessage global handler without window. prefix or setting it too early can fail in Figma’s iframe context.)
+
+	•	Design a Message Schema: Define a clear schema for your messages – e.g. an object with a type field and other data. For instance: { type: 'Generate', category: 'color' } from UI, and main might respond with { type: 'Result', success: true, created: 50 }. Using TypeScript, you can define an interface or union of message types to enforce this structure.
+
+	•	Keep UI State and Document in Sync: If your plugin allows interactive updates (e.g. user toggling themes or selecting different token sets), maintain synchronization:
+	•	Use figma.on("selectionchange", callback) in the main code to detect when the user’s canvas selection changes ￼. If, for example, your plugin UI shows info about the selected node (like what tokens are applied), you’d listen for selection changes and then figma.ui.postMessage({type:'SelectionInfo', ...}) with updated info. This way, the UI can react in real time to user actions outside the plugin.
+	•	Use figma.on("documentchange", callback) for broader changes to the file (nodes or styles added/removed) if needed – though this requires enabling "documentAccess": "dynamic" in your manifest for full file listening. This can be useful if your plugin UI lists variables and someone else or another plugin modifies them; you could update the UI accordingly. However, use this sparingly as it can be complex (and note that it batches events for performance).
+	•	Only keep listeners active while necessary. If your plugin has a longer-running UI, it’s fine to leave selection listeners on (they auto-disable when the plugin closes). If you open and close the UI dynamically, remove listeners with figma.off to prevent leaks.
+	•	Provide Feedback on Actions: When the user triggers an action in the UI (like “Generate Tokens”), give immediate feedback:
+	•	In-UI Feedback: Disable the action button while processing to prevent duplicate clicks. Show a spinner or progress bar if it’s a long operation. You can send intermediate progress messages from main to UI (e.g. {progress: 50} meaning 50% done) and reflect that in a progress bar.
+	•	Notifications: Use figma.notify(message, options) from the main thread to show a small toast in Figma ￼. For example, figma.notify("✅ Tokens generated successfully!"). Use the error: true option for error messages to show a red notification ￼. Keep messages under 100 characters (Figma will truncate longer text ￼). For lengthy operations, consider timeout: Infinity so the message stays up until the plugin closes or the action completes ￼ (just be sure to cancel or replace it later).
+	•	Close with Message: You can also pass a message to figma.closePlugin("...") – this will both close the plugin and show the message in a toast ￼. This is handy for ending the plugin with a final status (success or error). For example, figma.closePlugin("✨ Tokens synced!") will close the UI and inform the user.
+	•	Bi-Directional Error Handling: If something goes wrong (exception, invalid input, etc.), ensure the user is informed:
+	•	Catch errors in your main code’s async operations (use try/catch around async awaits for API calls). On error, you might figma.notify("⚠️ Failed to create tokens: " + error.message, {error: true}) and keep the plugin open for the user to adjust input. Or send a message to UI with the error details so you can display it within the plugin interface (useful if you have a status area there).
+	•	Validate user inputs in the UI before sending to main. For instance, if the user needs to paste a Tailwind config JSON, verify it’s parseable JSON and has expected fields, and show an inline error in the UI instead of letting an invalid config reach the main logic.
+	•	Seamless UX with Figma: Aim for your plugin UI to feel like part of Figma. Use Figma’s official color scheme and components where possible. You can utilize the Figma Plugin DS (Design System) CSS/React components for form elements, typography, spacing, etc., to achieve a native look. Figma’s review guidelines “highly recommend matching your plugin’s UI to Figma’s UI for a seamless experience” ￼. This includes using similar terminology and iconography as Figma (for example, a gear icon for settings, etc.). A well-integrated UI reduces user learning curve and increases trust.
+	•	Prevent UI from Blocking Work: If your plugin runs a long process and you keep the UI open, allow users to continue using Figma if possible. Due to Figma’s single-threaded plugin execution, heavy computations will freeze the Figma UI (including your plugin UI) ￼ ￼. To mitigate this:
+	•	Break large tasks into smaller chunks using setTimeout or requestAnimationFrame to yield between chunks ￼. For example, if you have to create 1000 variables, do them in batches of 100 with a short timeout between – this gives Figma a moment to breathe and handle any UI events (like a cancel click).
+	•	Use a pure CSS animation in your UI for a loading spinner, since CSS animations can sometimes continue even if the main thread is blocked ￼. This at least provides the perception that the plugin is alive.
+	•	If extreme performance is needed (e.g. heavy calculations on token data), consider a Web Worker to offload that work ￼. Note that the worker cannot access the Figma API or DOM directly, but it can crunch numbers or parse large JSON and then postMessage the result back to the main thread. This keeps the main thread free to update the UI. Use workers for CPU-intensive tasks like color conversion, large file parsing, etc., while keeping all Figma API calls on the main thread.
+	•	Selective Operations: If your plugin offers options to sync only certain categories (colors, or spacing, etc.), implement that logic to limit the scope of changes. This not only improves performance but also user control. For example, allow the user to check “Colors” and “Spacing” only, and then only process those tokens. The Tailwind Tokens plugin does this “selective sync” by category ￼. This feature can be part of your UI, and it avoids unnecessary updates to unrelated tokens, speeding up the run.
+
+Multi-Theme and Interaction State Strategies
+
+Supporting multiple design themes (and possibly component states) adds complexity, but variables make it much easier to manage:
+	•	Multi-Theme Support with Modes: As described earlier, Figma’s modes are ideal for themes like Light vs Dark. All variables in a collection share the same set of mode labels. Best practices:
+	•	Define your modes clearly (e.g. “light”, “dark”, or more specific theme names if you have multiple brands/themes). Rename the default mode from “Mode 1” to something meaningful like “light” ￼.
+	•	Set all relevant tokens’ values for each mode. A common mistake is to forget to set a value for one mode, leading to blank or default values in that theme. Use loops or data-driven logic: e.g., iterate through your Tailwind tokens and assign light and dark values appropriately.
+	•	If a token doesn’t change between themes (say a spacing value is the same in light/dark), you still need to set it for both modes (even if it’s the same number) so that switching modes in Figma doesn’t leave it undefined.
+	•	Provide a way to switch modes easily for testing. Figma allows changing the active mode for all variables on the page (by deselecting everything and choosing the mode in the right sidebar). You might also add a shortcut in your plugin UI – e.g., a toggle to switch theme – which could internally call figma.mode = "dark" (if using the API’s mode control) to change the active mode for the user’s convenience. This helps quickly verify that tokens correctly swap to their alternate values.
+	•	Multiple Brands or Design Systems: If you need to support entirely different design systems or brand themes (beyond simple light/dark), consider using multiple collections:
+	•	You could have one collection per brand, each with its own modes. For example, a “Brand A – Colors” collection with modes for that brand’s light/dark, and a “Brand B – Colors” for another brand. Users can swap entire collections if needed (though currently Figma doesn’t have a one-click collection swap, your plugin could facilitate updating references or values across themes).
+	•	Alternatively, use one collection with modes representing both brand and theme combinations (e.g. modes: BrandA-Light, BrandA-Dark, BrandB-Light, BrandB-Dark). This can get unwieldy if there are many combinations, so weigh the trade-offs. Community experts often suggest separate collections for separate brands to keep things clean ￼ ￼.
+	•	Keep naming consistent across brands so that mapping to code is easier (e.g. each brand might have a primary semantic color, but the values differ).
+	•	Semantic Aliases for Themes: As noted, leverage variable aliases for semantic tokens in different themes. Instead of duplicating values, have your semantic tokens reference the primitive tokens for that theme:
+	•	Example: primary-color variable could be an alias to blue-500 in light mode and alias to blue-300 in dark mode ￼. If later the blue palette changes, you update it in one place (the primitive), and semantic tokens inherit the new value.
+	•	The Plugin API’s figma.variables.createVariableAliasByIdAsync(varId) can produce an alias object to assign. After retrieving or creating the target primitive variable, do something like:
+
+const alias = await figma.variables.createVariableAliasByIdAsync(baseVar.id);
+semanticVar.setValueForMode(lightModeId, alias);
+
+This binds the semantic variable’s light mode value to the base variable. In Dev Mode or code export, Figma will even indicate this linkage which is great for developer handoff (ensuring the design token mapping is explicit).
+
+	•	Interaction States as Tokens: Design systems often have tokens for states like hover, active, disabled (especially for colors). Tailwind typically handles hover/active via utility classes rather than separate design tokens, but you may want to capture stateful variations in Figma:
+	•	Option 1: Separate Variables for States: Create semantic variables for each state, e.g. primary, primary-hover, primary-disabled. This is straightforward – they can each alias a different primitive if needed (like primary-hover might be a slightly darker color alias). Designers would manually swap to the hover token for hover prototypes. This approach keeps tokens simple and flat.
+	•	Option 2: Use Modes for States: This would mean treating state as a mode dimension. However, Figma’s variables currently support only one set of modes per collection, so you’d have to encode combinations (like a mode that is “Light-Hover” vs “Light-Default”). This quickly becomes cumbersome and not scalable.
+	•	Recommended: Use separate tokens for states (Option 1). It’s clearer and aligns with how developers think of Tailwind (where hover:bg-blue-500 is a different style applied on hover). For example, you might have buttonBg (default) and buttonBgHover tokens. Document that the “Hover” tokens are to be used in prototyping for hover states. You can group them by naming (prefix or suffix), and possibly scope them similarly to normal tokens.
+	•	In your plugin UI, you might provide an option to generate these state tokens automatically if the Tailwind config or a convention provides them (for instance, if you detect a color is darkened for hover, generate a hover token alias).
+	•	Maintaining Token Consistency: With multiple themes and states, establish a pattern and stick to it. For instance:
+	•	All semantic color tokens have a base (default) and may have -hover and -active variants.
+	•	All theme collections have the same structure so that switching themes doesn’t change the token names, only their values. This consistency is crucial for developers – they’ll use the same token name in code for both themes, and just the theme switch in Figma will swap the values.
+	•	Provide guidance (maybe in the plugin README or UI) for designers on how to apply variables for states. For example: “Use the *-hover tokens on interactive components’ hover prototypes. Use the mode toggle to preview light vs dark themes.”
+	•	Test Mode and Alias Behavior: Always test how your variable aliases and modes behave in actual design files:
+	•	Apply a semantic token to an object (e.g. fill a shape with background-brand in light mode). Then switch the file to dark mode; it should automatically swap to the dark value. Confirm that if the dark mode value was an alias to a primitive, it reflects correctly.
+	•	If you rename modes or move tokens between collections, verify that references remain intact. Figma identifies variables by ID under the hood (not by name), so renaming should not break anything. But moving a variable to a different collection (if you allow that) is effectively creating a new variable with new IDs – better to avoid or handle via aliasing rather than moving.
+
+Robust Error Handling and Debugging Tips
+
+Even with best practices, things can go wrong. Here’s how to detect and diagnose issues during development and ensure your plugin reports status accurately to users:
+	•	Use the Console and Developer Tools: While building the plugin, open Figma’s Developer Console (Plugins > Development > Open Console or ⌥⌘I on Mac) ￼. This console is your friend:
+	•	Use console.log() lavishly to print out what your plugin is doing and the values of key variables ￼. For example, log the number of tokens parsed, the names of collections created, etc. These logs appear in the console and can help trace the plugin’s execution.
+	•	If an object is logged (like a node or variable), you can expand it in the console to inspect its properties. Note: once the plugin closes, some logged object references become inert, so if you need to inspect deeply, run the plugin without closing it or remove figma.closePlugin() temporarily while debugging ￼.
+	•	You can add a debugger; statement in your code to pause execution and step through in the dev tools debugger ￼.
+	•	Handling Exceptions: Wrap key operations (like bulk variable creation) in try/catch. If an error is thrown (e.g., due to a bad value or API misuse), catch it and figma.notify an error message for the user. Also console.error it for yourself. For example:
+
+try {
+  // ... creating variables
+} catch (err) {
+  console.error("Token creation failed:", err);
+  figma.notify("❌ Token creation failed: " + err.message, { error: true });
+}
+
+This ensures the plugin doesn’t just silently fail or hang. If the error is recoverable (like one token failed but others can proceed), decide whether to continue or abort. It’s often safer to abort and inform the user which token caused an issue so they can fix the source.
+
+	•	Common Pitfalls in Token Generation:
+	•	Duplicate Names: If you attempt to create two variables with the same name in the same collection, Figma might either throw an error or create one and then fail the second. Ensure unique naming per collection. Using structured names (like prefix categories or numeric scales) usually avoids accidental duplicates. If there’s a conflict (say Tailwind has two tokens that end up with the same name string after formatting), handle that (e.g. append a suffix or skip one with a warning).
+	•	Exceeding Limits: A collection can have up to 5,000 variables ￼. If you approach this limit (unlikely with Tailwind defaults, but possible if merging many design tokens), consider splitting into multiple collections or alert the user. Also, creating thousands of variables in one go can be slow; implement chunking as mentioned in the performance section.
+	•	Color Format: Ensure you convert color values to Figma’s RGB format {r, g, b} (0-1 normalized) or 6-hex string if using styles. Tailwind hex codes need conversion to the {r,g,b} object for setValueForMode. Forgetting to convert (or mixing up 0-255 vs 0-1) will cause incorrect colors or errors. Write a helper to convert #RRGGBB to {r:..., g:..., b:...} easily.
+	•	Font Loading: If you bind a font-related variable (like font family) to a text node, remember to load that font in the plugin (figma.loadFontAsync({ family: ..., style: ... })) before applying. Otherwise, the plugin will error out with a font not loaded message. This is a common hiccup when setting typography tokens on TextNodes ￼ ￼.
+	•	Interaction with Styles: If your plugin also creates Figma styles (paint or text styles) to accompany variables (some workflows do this for backward compatibility), be careful to update styles rather than duplicating. And if you bind variables to styles (possible via figma.variables.setBoundVariableForPaint(stylePaint, 'color', colorVar) ￼), ensure you clone the style paints array (styles are immutable objects similar to node fills).
+	•	Performance Debugging: If your plugin is slow or freezing:
+	•	Use timers or logs to find bottlenecks (e.g., log timestamps around heavy loops).
+	•	The Figma Developer VM (accessible via Plugins > Development > Use Developer VM) runs your plugin in a normal JS engine for debugging, but note it can give unrealistic performance – something fast in Dev VM might be slower in the real sandbox ￼. Always test heavy operations without the Dev VM to gauge real performance.
+	•	If the plugin consistently freezes for large inputs, consider providing a warning or progress indicator (e.g. “This might take a minute for 1000 tokens…”). And implement the chunking technique from Frozen Plugins guidelines to keep the UI responsive ￼.
+	•	Undo Considerations: By default, all changes your plugin makes in one run are grouped as a single undo step. If the user presses Undo, everything your plugin did is undone at once. This is usually fine (e.g. remove all generated tokens in one undo). If you need finer undo granularity (perhaps your plugin performs distinct sub-actions while it stays open), you can call figma.commitUndo() to slice the undo stack ￼. For example, after creating a batch of variables, calling commitUndo() will commit those, then further actions will be a separate undo. Only use this if you truly have separate user-initiated actions happening in one plugin session. In most cases, one undo for the entire operation is desired (and you don’t need to call commitUndo at all).
+	•	Persistent Data & Settings: You can use figma.clientStorage to save user preferences or last-used configurations (like a path to a Tailwind config or a chosen theme) between plugin runs. This can improve UX (e.g. remembering that the user last synced only Colors and Spacing). Use await figma.clientStorage.setAsync(key, value) and getAsync to store and retrieve small pieces of JSON-serializable data. Always handle the case where data isn’t present (first run) or is malformed (if the format changed after an update).
+	•	User Support and Logging: If your plugin will be used widely, consider adding an unobtrusive way to get diagnostic info. For example, a “Copy debug info” link that copies details like plugin version, counts of tokens, perhaps a snippet of the config to the clipboard. This can help when users report issues. Also ensure your error messages are actionable – e.g. “Failed to parse Tailwind config – please ensure it’s valid JSON” rather than just “Error 500”. Quality and clarity here improve user trust.
+
+Code Structure and Maintainability
+
+As your plugin grows in features, maintain a clean code organization:
+	•	Separate Concerns: Split your code into logical modules:
+	•	Main Code (Figma API logic): Handles reading Tailwind config or user input, creating/updating variables, and binding to Figma. Keep this in code.ts (or multiple files imported by it). Example modules: tokenParser.ts (to parse Tailwind or design token input), variableManager.ts (to create/update figma variables), mapping.ts (to map token names to desired Figma naming).
+	•	UI Code (React components): In ui.tsx, focus on the user interface – form inputs, buttons, checkboxes for categories, progress display, etc. Organize into components (e.g. a component for a category selection checklist, a component for a progress bar). Keep state in React state/hooks and respond to props or message events to update.
+	•	Communication Layer: You may create a small wrapper for sending messages so you don’t repeat the postMessage strings everywhere. For instance, define a sendMessage(type, data) function in UI to centralize how messages are structured, and in main code a matching handler or router for message types.
+	•	By separating these layers, you make the code easier to reason about. The UI should not directly call Figma API (it can’t) and the main code should not attempt to manipulate UI elements – they communicate strictly through messages. This decoupling also allows you to adjust one side without deeply affecting the other.
+	•	Leverage TypeScript for Safety: Define interfaces for your tokens and messages. For example, an interface DesignToken { name: string; value: string | number; category: 'color' | 'spacing' | ... } can help ensure you handle tokens correctly. Similarly, a union type for plugin messages like:
+
+type PluginMessage = 
+  | { type: 'GENERATE_TOKENS'; categories: string[] }
+  | { type: 'SYNC_COMPLETE'; success: boolean; updated: number; }
+  | { type: 'ERROR'; message: string };
+
+This way, your onmessage handler in main can switch on msg.type with exhaustive checking, and your UI knows what to expect back. This reduces runtime bugs where a property might be missing or misspelled.
+
+	•	Scalability Patterns: As the plugin grows:
+	•	Use functions to avoid repeating code. For example, if creating a variable involves checking for existing and updating, encapsulate that in a function upsertVariable(name, collection, type, valuesByMode): Variable. This reduces mistakes and centralizes how you handle conflicts or updates.
+	•	If you have configuration (like Tailwind default scales, mapping of Figma variable scopes, etc.), store it in a constants file or JSON. This makes it easier to update as Tailwind or Figma evolves.
+	•	Comment your code generously. Especially explain non-obvious mappings (e.g. “Tailwind’s xl corresponds to 1.25rem which in our config is spacing-5” or “Using alias here to link semantic to primitive token”).
+	•	Keep performance in mind: avoid deeply nested loops if not necessary (e.g. iterating thousands of tokens within thousands of nodes – not likely here, but be mindful). Use array methods and mappings which are generally fine for moderate data sizes.
+	•	Consider the plugin’s lifecycle – if the UI remains open for a while (user toggling things), manage state accordingly. For example, if user switches theme in UI, you might want to not recreate variables but simply change mode or update only relevant ones.
+	•	Testing and Edge Cases: Try your plugin in various scenarios:
+	•	Empty file vs a file with existing conflicting styles/variables.
+	•	Extremely large Tailwind config (if someone has extended Tailwind with dozens of custom colors).
+	•	No network (if your plugin might fetch something, ensure it fails gracefully offline ￼).
+	•	Different operating systems or Figma versions if possible, to ensure no UI quirks.
+	•	If possible, write unit tests for pure functions (like a function that converts Tailwind JSON to token list). While you can’t unit test Figma API calls outside the environment, you can structure logic so that the Figma-dependent part is small and the rest can be tested with dummy data.
+	•	User Experience & Interface Design:
+	•	Keep the plugin interface intuitive: group related controls, use clear labels (e.g. “Tailwind Config JSON” or “Select token categories to sync”). If using icons, add tooltips to clarify their action.
+	•	If the plugin has multiple steps (like upload config -> preview -> apply), make that a linear flow in the UI so users don’t get lost.
+	•	Respect Figma’s UI aesthetic: minimal, clean, and focused. The Figma review guidelines note that plugins should not have confusing or ugly UIs that degrade user experience ￼. A polished UI also lends credibility to your plugin.
+	•	No Technical Jargon for Users: Surface things in user-friendly terms. For example, if an error occurs, say “Please check your Tailwind configuration format” rather than “JSON parse error in token file”. Hide stack traces or technical details (but you can log them to console).
+	•	Provide an escape hatch: maybe a “Cancel” or close button in your UI (though the plugin can also be closed via the Figma UI close button on the plugin modal). If a process is running, allow the user to cancel (you’ll need to handle this in your code by perhaps setting a flag to abort further variable creation in your chunk loop).
+	•	Multi-Theme UI considerations: If your plugin deals with themes, consider showing which theme/mode is active (perhaps just reflect Figma’s mode setting) and warn if user tries to generate tokens while a different mode is active (since you typically want to generate for all modes regardless of the current one).
+	•	Documentation and Support: Lastly, maintain good documentation for your plugin (even if just a well-written description in the Figma Community listing or a link to a GitHub README). Include usage instructions and highlight these best practices as features: e.g. “Our plugin automatically maps Tailwind tokens to Figma variables with matching names, supports light/dark mode via variable modes, and ensures existing styles update safely.” This helps users (and reviewers) understand that your plugin is thoughtfully built. And set up a way for users to contact you (email or GitHub issues) for support – the Figma guidelines require authors to support their plugins ￼.
+
+By following this guide – using the Figma Plugin API effectively, maintaining a responsive UI, and aligning design tokens with Tailwind conventions – you’ll create a plugin that drastically streamlines the design-to-code workflow. The goal is a win-win: designers get an organized system of local variables (colors, spacing, typography) that mirror their codebase, and developers can trust that the Figma tokens map 1:1 to Tailwind CSS variables and classes. With careful attention to performance, feedback, and structure, your Figma plugin will be robust, user-friendly, and easy to maintain as both Figma and Tailwind evolve. Happy coding! 🚀
+
+Sources:
+	•	Figma Plugin API – Working with Variables (Figma official docs) ￼ ￼
+	•	Figma Plugin API – Variables Reference (properties and methods) ￼ ￼
+	•	Figma Help Center – Plugin Review Guidelines (Quality, UI, Performance) ￼ ￼
+	•	Figma Community Forum – Best practices for variables (user insights on primitives vs semantic tokens) ￼ ￼
+	•	Reddit r/FigmaDesign – “Tailwind tokens” plugin announcement (feature highlights) ￼ ￼
+	•	Figma Plugin Debugging Guide – using console and avoiding freezes ￼ ￼
+	•	Developer Q&A – React plugin messaging (correct message event usage) ￼ ￼
+	•	Frames X Design Blog – Figma Variables best practices (naming conventions and organization) ￼ ￼

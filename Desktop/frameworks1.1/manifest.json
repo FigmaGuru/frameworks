@@ -2,7 +2,7 @@
   "name": "Framework",
   "id": "com.framework.plugin",
   "api": "1.0.0",
-  "main": "code.js",
+  "main": "dist/code.js",
   "ui": "custom-ui/dist/index.html",
   "editorType": ["figma"]
 }

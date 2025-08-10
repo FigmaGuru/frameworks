@@ -1,76 +1,61 @@
-# Frameworks 1.1
+# Framework Figma Plugin
 
-A Figma plugin project for generating and managing design tokens with a custom UI built using React, TypeScript, and Tailwind CSS.
+A Figma plugin for generating design tokens as local variables. Supports colors, spacing, and typography tokens with semantic naming.
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 frameworks1.1/
-├── code.ts                 # Main Figma plugin code
-├── code.js                 # Compiled plugin code
-├── manifest.json           # Figma plugin manifest
-├── webpack.config.js       # Webpack configuration
-├── tsconfig.json          # TypeScript configuration
-├── .gitignore             # Git ignore rules
-└── custom-ui/             # Custom UI application
-    ├── src/
-    │   ├── App.tsx        # Main React application
-    │   ├── views/         # UI view components
-    │   │   ├── ColorsView.tsx
-    │   │   ├── SpacingView.tsx
-    │   │   ├── TypographyView.tsx
-    │   │   └── AliasPreviewUI.tsx
-    │   ├── lib/           # Utility functions and data
-    │   └── components/    # Reusable UI components
-    ├── package.json       # UI dependencies
-    ├── tailwind.config.ts # Tailwind CSS configuration
-    └── vite.config.ts     # Vite build configuration
+├── code.ts                 # Main plugin logic (TypeScript)
+├── custom-ui/              # React UI components
+│   ├── src/
+│   │   ├── views/         # Main view components
+│   │   ├── components/    # Reusable UI components
+│   │   └── lib/          # Utility functions
+│   └── dist/              # Built UI (generated)
+├── dist/                   # Built plugin code (generated)
+└── manifest.json          # Plugin configuration
 ```
 
-## Features
-
-- **Design Token Generation**: Create and manage color, spacing, and typography tokens
-- **Custom UI**: Modern React-based interface with Tailwind CSS styling
-- **Figma Integration**: Seamless integration with Figma's design system
-- **TypeScript**: Full type safety throughout the application
-
-## Development
+## 🚀 Build Process
 
 ### Prerequisites
+```bash
+npm run install:all
+```
 
-- Node.js (v16 or higher)
-- npm or yarn
-- Figma Desktop app
+### Development
+```bash
+# Watch TypeScript compilation
+npm run dev
 
-### Setup
+# In another terminal, watch UI changes
+cd custom-ui && npm run dev
+```
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   cd custom-ui
-   npm install
-   ```
+### Production Build
+```bash
+npm run build
+```
 
-3. Build the UI:
-   ```bash
-   npm run build
-   ```
+This will:
+1. Compile `code.ts` → `dist/code.js`
+2. Build React UI → `custom-ui/dist/`
 
-4. Load the plugin in Figma:
-   - Open Figma Desktop
-   - Go to Plugins > Development > Import plugin from manifest
-   - Select the `manifest.json` file
+## 📦 Plugin Features
 
-## Building
+- **Colors**: Generate semantic color variables with light/dark modes
+- **Spacing**: Create consistent spacing scale variables
+- **Typography**: Build font system variables (size, weight, line-height)
 
-The project uses Webpack to compile the TypeScript code and bundle the custom UI. The build process creates the necessary files for the Figma plugin to run.
+## 🔧 Development
 
-## Contributing
+- **Main Thread**: `code.ts` handles Figma API calls
+- **UI Thread**: React components in `custom-ui/src/views/`
+- **Communication**: Messages passed via `postMessage` API
 
-This project is designed to help understand code structure and development workflows. Feel free to explore and modify the code to learn more about:
+## 📋 Requirements
 
-- React component architecture
-- TypeScript type definitions
-- Tailwind CSS styling
-- Figma plugin development
-- Modern build tools and workflows 
+- Figma Plugin API 1.0.0
+- Node.js 16+
+- TypeScript 5.9+ 

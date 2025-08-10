@@ -8,6 +8,9 @@ export interface SwatchProps {
   alias: string;
   included: boolean;
   themeMode?: "light" | "dark";
+  lightHex?: string;
+  darkHex?: string;
+  primitiveLabel?: string;
   onToggleIncluded(): void;
 }
 
@@ -21,6 +24,9 @@ const Swatch: React.FC<SwatchProps> = ({
   alias,
   included,
   themeMode,
+  lightHex,
+  darkHex,
+  primitiveLabel,
   onToggleIncluded,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -46,18 +52,43 @@ const Swatch: React.FC<SwatchProps> = ({
         transform: 'translateX(-50%) translateY(-100%)'
       }}
     >
-      <div className="font-mono font-semibold">{hex.toUpperCase()}</div>
-      <div className="font-medium text-gray-200 dark:text-gray-700">{alias}</div>
-      {themeMode && (
-        <div className="text-xs text-gray-300 dark:text-gray-600 mt-1">
-          {themeMode === "light" ? "☀️ Light" : "🌙 Dark"}
-        </div>
+      <div className="font-mono font-semibold">{alias}</div>
+      <div className="font-mono text-sm mt-1">{hex.toUpperCase()}</div>
+      {primitiveLabel && (
+        <div className="text-xs text-gray-300 dark:text-gray-600 mt-1">{primitiveLabel}</div>
       )}
       {/* Tooltip arrow */}
       <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
     </div>
   );
 
+  // If we have both light and dark colors, show them side by side
+  if (lightHex && darkHex && !themeMode) {
+    return (
+      <>
+        <div 
+          ref={swatchRef}
+          className="group flex gap-1 cursor-pointer"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {/* Light color */}
+          <div className="w-6 h-6 relative rounded-[4px] shadow-md">
+            <div className="absolute inset-0 rounded-[4px]" style={{ backgroundColor: lightHex }} />
+          </div>
+          {/* Dark color */}
+          <div className="w-6 h-6 relative rounded-[4px] shadow-md">
+            <div className="absolute inset-0 rounded-[4px]" style={{ backgroundColor: darkHex }} />
+          </div>
+        </div>
+        
+        {/* Portal tooltip to render outside overflow containers */}
+        {tooltip && createPortal(tooltip, document.body)}
+      </>
+    );
+  }
+
+  // Single color display (for primitives, single-mode tokens, or when themeMode is specified)
   return (
     <>
       <div 

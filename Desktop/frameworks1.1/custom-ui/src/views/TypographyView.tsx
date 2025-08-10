@@ -28,10 +28,10 @@ const typographyPrimitives = {
     "3xl": { size: "30px", weight: "600", lineHeight: "36px" },
     "4xl": { size: "36px", weight: "600", lineHeight: "40px" },
     "5xl": { size: "48px", weight: "700", lineHeight: "48px" },
-    "6xl": { size: "60px", weight: "700", lineHeight: "60px" },
-    "7xl": { size: "72px", weight: "800", lineHeight: "72px" },
-    "8xl": { size: "96px", weight: "800", lineHeight: "96px" },
-    "9xl": { size: "128px", weight: "900", lineHeight: "128px" },
+    "6xl": { size: "60px", weight: "700", lineHeight: "64px" },
+    "7xl": { size: "72px", weight: "800", lineHeight: "76px" },
+    "8xl": { size: "96px", weight: "800", lineHeight: "100px" },
+    "9xl": { size: "128px", weight: "900", lineHeight: "132px" },
   },
   "Merriweather": {
     "xs": { size: "12px", weight: "400", lineHeight: "18px" },
@@ -101,7 +101,8 @@ const TypographyToken = ({
   included, 
   type, 
   category,
-  onToggleIncluded 
+  onToggleIncluded,
+  relatedPrimitives = []
 }: {
   size: string;
   weight: string;
@@ -112,17 +113,18 @@ const TypographyToken = ({
   type: "primitive" | "semantic";
   category?: string;
   onToggleIncluded: () => void;
+  relatedPrimitives?: string[];
 }) => {
   return (
     <div className="group relative">
-              <div className={`
-          relative bg-white dark:bg-gray-900 border rounded-lg p-4 min-w-[160px] transition-all duration-150
-          ${included 
-            ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900' 
-            : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
-          }
-          ${type === 'semantic' ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : ''}
-        `}>
+      <div className={`
+        relative bg-white dark:bg-gray-900 border rounded-lg p-4 min-w-[160px] transition-all duration-150
+        ${included 
+          ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900' 
+          : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
+        }
+        ${type === 'semantic' ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : ''}
+      `}>
         {/* Font Preview */}
         <div 
           className="mb-3 text-gray-900 dark:text-gray-100"
@@ -158,8 +160,6 @@ const TypographyToken = ({
           </div>
         </div>
 
-
-
         {/* Semantic Badge */}
         {type === 'semantic' && (
           <div className="absolute top-3 right-3">
@@ -169,6 +169,25 @@ const TypographyToken = ({
           </div>
         )}
       </div>
+      
+      {/* Show related primitives for semantic tokens */}
+      {type === 'semantic' && relatedPrimitives.length > 0 && (
+        <div className="absolute -bottom-1 left-0 right-0 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-b-lg p-1 text-xs text-orange-700 dark:text-orange-300">
+          <div className="font-medium mb-1">Uses:</div>
+          <div className="flex flex-wrap gap-1">
+            {relatedPrimitives.slice(0, 3).map(prim => (
+              <span key={prim} className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900 rounded text-xs">
+                {prim}
+              </span>
+            ))}
+            {relatedPrimitives.length > 3 && (
+              <span className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900 rounded text-xs">
+                +{relatedPrimitives.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -208,6 +227,37 @@ export default function TypographyView({ query = "" }: { query?: string }) {
     });
     return initial;
   });
+
+  // Find semantic tokens that use primitive typography values
+  const semanticToPrimitiveMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    
+    // Check each semantic token against primitives
+    Object.entries(semanticTypography).forEach(([category, tokens]) => {
+      Object.entries(tokens).forEach(([name, styles]) => {
+        const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
+        const matchingPrimitives: string[] = [];
+        
+        // Find primitives that match this semantic token's properties
+        Object.entries(typographyPrimitives).forEach(([fontFamily, fontScales]) => {
+          Object.entries(fontScales).forEach(([scale, primitiveStyles]) => {
+            if (primitiveStyles.size === styles.size && 
+                primitiveStyles.weight === styles.weight && 
+                primitiveStyles.lineHeight === styles.lineHeight &&
+                primitiveStyles.font === styles.font) {
+              matchingPrimitives.push(`${fontFamily.toLowerCase()}-${scale}`);
+            }
+          });
+        });
+        
+        if (matchingPrimitives.length > 0) {
+          map[semanticName] = matchingPrimitives;
+        }
+      });
+    });
+    
+    return map;
+  }, []);
 
   // Filter primitives based on query
   const lower = query.toLowerCase();
@@ -249,6 +299,7 @@ export default function TypographyView({ query = "" }: { query?: string }) {
         font: string;
         type: "primitive" | "semantic";
         category?: string;
+        relatedPrimitives?: string[];
       }> = [];
 
       // Add included primitives
@@ -270,14 +321,16 @@ export default function TypographyView({ query = "" }: { query?: string }) {
       // Add all semantic tokens
       Object.entries(semanticTypography).forEach(([category, tokens]) => {
         Object.entries(tokens).forEach(([name, styles]) => {
+          const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
           variables.push({
-            name: `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`,
+            name: semanticName,
             size: styles.size,
             weight: styles.weight,
             lineHeight: styles.lineHeight,
             font: styles.font,
             type: "semantic",
-            category
+            category,
+            relatedPrimitives: semanticToPrimitiveMap[semanticName] || []
           });
         });
       });
@@ -334,13 +387,15 @@ export default function TypographyView({ query = "" }: { query?: string }) {
             const semanticCount = Object.entries(semanticTypography).reduce((sum, [_, tokens]) => 
               sum + Object.keys(tokens).length, 0
             );
+            const totalCount = primitiveCount + semanticCount;
             
             return (
               <button
                 onClick={generateVariables}
                 className="px-4 py-1 bg-black dark:bg-white text-white dark:text-black rounded text-xs hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                title={`Generate ${totalCount} variables (${primitiveCount} primitives + ${semanticCount} semantics)`}
               >
-                Generate
+                Generate {totalCount}
               </button>
             );
           })()}
@@ -353,7 +408,7 @@ export default function TypographyView({ query = "" }: { query?: string }) {
           <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-600 dark:text-gray-400" style={{fontSize: '12px'}}>
             {(() => {
               const totalTokens = Object.values(filteredPrimitives).reduce((sum, items) => sum + items.length, 0);
-              return `Typography primitives across three font families: Inter, Roboto, and Merriweather (${totalTokens} tokens available).`;
+              return `Typography primitives across three font families: Inter, Roboto, and Merriweather (${totalTokens} tokens available). Select which ones to include in your design system.`;
             })()}
           </div>
           
@@ -390,7 +445,7 @@ export default function TypographyView({ query = "" }: { query?: string }) {
       {activeTab === "semantics" && (
         <div className="flex-1 overflow-auto space-y-3 pr-1">
           <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-600 dark:text-gray-400" style={{fontSize: '12px'}}>
-            Semantic typography tokens organized by use case and context.
+            Semantic typography tokens organized by use case and context. These automatically align with primitive values.
           </div>
 
           {Object.entries(semanticTypography).map(([category, tokens]) => (
@@ -403,20 +458,26 @@ export default function TypographyView({ query = "" }: { query?: string }) {
               onToggle={() => toggleSemantic(category)}
             >
               <div className="flex flex-wrap gap-3 p-4">
-                {Object.entries(tokens).map(([name, styles]) => (
-                  <TypographyToken
-                    key={`${category}-${name}`}
-                    size={styles.size}
-                    weight={styles.weight}
-                    lineHeight={styles.lineHeight}
-                    font={styles.font}
-                    alias={`${category.toLowerCase().replace(/\s+/g, '-')}-${name}`}
-                    included={true}
-                    type="semantic"
-                    category={category}
-                    onToggleIncluded={() => {}}
-                  />
-                ))}
+                {Object.entries(tokens).map(([name, styles]) => {
+                  const semanticName = `${category.toLowerCase().replace(/\s+/g, '-')}-${name}`;
+                  const relatedPrimitives = semanticToPrimitiveMap[semanticName] || [];
+                  
+                  return (
+                    <TypographyToken
+                      key={`${category}-${name}`}
+                      size={styles.size}
+                      weight={styles.weight}
+                      lineHeight={styles.lineHeight}
+                      font={styles.font}
+                      alias={semanticName}
+                      included={true}
+                      type="semantic"
+                      category={category}
+                      onToggleIncluded={() => {}}
+                      relatedPrimitives={relatedPrimitives}
+                    />
+                  );
+                })}
               </div>
             </Accordion>
           ))}
