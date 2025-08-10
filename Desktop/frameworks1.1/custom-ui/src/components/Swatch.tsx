@@ -1,85 +1,78 @@
 // src/components/Swatch.tsx
-import React, { useState } from "react";
-import { Undo2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export interface SwatchProps {
   hex: string;
   originalHex: string;
   alias: string;
   included: boolean;
-  onHexChange(hex: string): void;
-  onAliasChange(alias: string): void;
+  themeMode?: "light" | "dark";
   onToggleIncluded(): void;
-  onReset(): void;
 }
 
 /**
- * Master Swatch component with hover-editable alias, revert, theming support,
- * rounded corners, increased height, no internal checkbox (handled in Accordion).
+ * Minimal Swatch component displaying only the color.
+ * Read-only display with rounded corners and shadow.
  */
 const Swatch: React.FC<SwatchProps> = ({
   hex,
   originalHex,
   alias,
   included,
-  onHexChange,
-  onAliasChange,
+  themeMode,
   onToggleIncluded,
-  onReset,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const isEdited = hex.toLowerCase() !== originalHex.toLowerCase();
+  const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const swatchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isHovered && swatchRef.current) {
+      const rect = swatchRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      });
+    }
+  }, [isHovered]);
+
+  const tooltip = isHovered && (
+    <div 
+      className="fixed z-[99999] px-3 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-md shadow-xl whitespace-nowrap border border-gray-700 dark:border-gray-300 pointer-events-none"
+      style={{
+        left: tooltipPosition.x,
+        top: tooltipPosition.y,
+        transform: 'translateX(-50%) translateY(-100%)'
+      }}
+    >
+      <div className="font-mono font-semibold">{hex.toUpperCase()}</div>
+      <div className="font-medium text-gray-200 dark:text-gray-700">{alias}</div>
+      {themeMode && (
+        <div className="text-xs text-gray-300 dark:text-gray-600 mt-1">
+          {themeMode === "light" ? "☀️ Light" : "🌙 Dark"}
+        </div>
+      )}
+      {/* Tooltip arrow */}
+      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+    </div>
+  );
 
   return (
-    <label className="group w-32 h-32 relative overflow-hidden rounded-[16px] shadow-md cursor-pointer">
-      {/* dynamic color background */}
-      <div className="absolute inset-0" style={{ backgroundColor: hex }} />
-
-      {/* color picker covers entire card */}
-      <input
-        type="color"
-        value={hex}
-        onChange={e => onHexChange(e.target.value)}
-        className="absolute inset-0 opacity-0 z-10"
-      />
-
-      {/* Top-right revert button, shown only when edited */}
-      {isEdited && (
-        <button
-          onClick={e => {
-            e.stopPropagation();
-            onReset();
-          }}
-          className="absolute top-2 right-2 p-1 bg-white dark:bg-gray-800 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 z-20"
-          title="Revert to original"
-        >
-          <Undo2 size={16} className="text-gray-600 dark:text-gray-300" />
-        </button>
-      )}
-
-      {/* Bottom area: hex badge and alias input */}
-      <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center space-y-1 z-20">
-        {/* Hex badge */}
-        <div className="bg-white dark:bg-gray-800 text-black dark:text-white text-[10px] font-mono rounded-full px-2 py-0.5">
-          {hex.toUpperCase()}
-        </div>
-
-        {/* Alias input (always visible) */}
-        <input
-          type="text"
-          value={alias}
-          onChange={e => onAliasChange(e.target.value)}
-          onFocus={() => setIsEditing(true)}
-          onBlur={() => setIsEditing(false)}
-          className={`w-full text-center font-semibold text-sm 
-            bg-white bg-opacity-80 dark:bg-gray-800 dark:bg-opacity-60 
-            rounded transition-border outline-none truncate
-            ${isEditing
-              ? "border border-gray-300 dark:border-gray-600"
-              : "border-transparent"}`}
-        />
+    <>
+      <div 
+        ref={swatchRef}
+        className="group w-8 h-8 relative rounded-[6px] shadow-md cursor-pointer"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* dynamic color background */}
+        <div className="absolute inset-0 rounded-[6px]" style={{ backgroundColor: hex }} />
       </div>
-    </label>
+      
+      {/* Portal tooltip to render outside overflow containers */}
+      {tooltip && createPortal(tooltip, document.body)}
+    </>
   );
 };
 

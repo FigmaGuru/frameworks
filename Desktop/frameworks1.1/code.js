@@ -1,58 +1,114 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-// code.ts
-figma.showUI(__html__, { width: 1000, height: 700 });
-
-figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
-    if (msg.type === "generate-variables") {
-        const colors = msg.payload;
-
-        // Create primitive collection
-        const collection = figma.variables.createVariableCollection("Primitives");
-        const mode = collection.modes[0];
-        const primitiveMap = new Map();
-
-        for (const item of colors) {
-            const primitiveName = `${item.family}-${item.step}`;
-            const variable = figma.variables.createVariable(primitiveName, collection, "COLOR");
-            variable.setValueForMode(mode.modeId, hexToRgb(item.hex));
-            primitiveMap.set(item.hex, variable);
-        }
-
-        // Create semantic collection
-        const semanticCollection = figma.variables.createVariableCollection("Semantic");
-        const semanticMode = semanticCollection.modes[0];
-
-        for (const item of colors) {
-            const target = primitiveMap.get(item.hex);
-            if (!target) continue;
-            const semantic = figma.variables.createVariable(item.alias, semanticCollection, "COLOR");
-            semantic.setValueForMode(semanticMode.modeId, {
-                type: "VARIABLE_ALIAS",
-                id: target.id,
-            });
-        }
-
-        figma.notify(`✅ Created ${colors.length} semantic colors.`);
-        figma.closePlugin();
-    }
-});
-
-// Convert hex to RGB
+// src/code.ts
+// This file runs in Figma’s main thread
+// 1. Show the React UI
+figma.showUI(__html__, { width: 600, height: 700 });
+// 2. Helper: convert "#rrggbb" → { r, g, b } with values in [0,1]
 function hexToRgb(hex) {
-    const clean = hex.replace("#", "");
-    const bigint = parseInt(clean, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return { r: r / 255, g: g / 255, b: b / 255 };
+    const parsed = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!parsed)
+        return { r: 0, g: 0, b: 0 };
+    const [, rr, gg, bb] = parsed;
+    return {
+        r: parseInt(rr, 16) / 255,
+        g: parseInt(gg, 16) / 255,
+        b: parseInt(bb, 16) / 255,
+    };
 }
+// 3. Listen for messages from the UI
+figma.ui.onmessage = (msg) => {
+    const { type, payload } = msg.pluginMessage;
+    switch (type) {
+        // ─── PRIMITIVES ───────────────────────────────────────────────
+        case "generate-primitives": {
+            // payload: Array<{ family: string; alias: string; hex: string }>
+            for (const { family, alias, hex } of payload) {
+                const style = figma.createPaintStyle();
+                style.name = `${family}/${alias}`;
+                style.paints = [
+                    {
+                        type: "SOLID",
+                        color: hexToRgb(hex),
+                    },
+                ];
+            }
+            figma.notify("✨ Primitives generated");
+            break;
+        }
+        // ─── SEMANTICS ────────────────────────────────────────────────
+        case "generate-semantics": {
+            // payload: Record<string, Record<string, string>>
+            const presets = payload;
+            for (const [group, map] of Object.entries(presets)) {
+                for (const [alias, hex] of Object.entries(map)) {
+                    const style = figma.createPaintStyle();
+                    style.name = `Semantic/${group}/${alias}`;
+                    style.paints = [
+                        {
+                            type: "SOLID",
+                            color: hexToRgb(hex),
+                        },
+                    ];
+                }
+            }
+            figma.notify("🔑 Semantics generated");
+            break;
+        }
+        // ─── LOCAL VARIABLES ──────────────────────────────────────────
+        case "generate-local-variables": {
+            try {
+                const { variables, totalCount, primitiveCount, semanticCount } = payload;
+                console.log(`Generating ${totalCount} local variables (${primitiveCount} primitives, ${semanticCount} semantics)`);
+                // Create or get the main collection
+                let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Framework Colors");
+                if (!collection) {
+                    collection = figma.variables.createVariableCollection("Framework Colors");
+                }
+                // Create light and dark modes for semantics
+                const lightMode = collection.modes.find(m => m.name === "Light") || collection.modes[0];
+                let darkMode = collection.modes.find(m => m.name === "Dark");
+                if (!darkMode && semanticCount > 0) {
+                    darkMode = collection.addMode("Dark");
+                }
+                // Update mode names
+                if (lightMode) {
+                    collection.renameMode(lightMode.modeId, "Light");
+                }
+                let createdCount = 0;
+                for (const variable of variables) {
+                    try {
+                        // Check if variable already exists
+                        const existingVariable = figma.variables.getLocalVariables().find(v => v.name === variable.name);
+                        let figmaVariable = existingVariable;
+                        if (!figmaVariable) {
+                            figmaVariable = figma.variables.createVariable(variable.name, collection, "COLOR");
+                            createdCount++;
+                        }
+                        // Set the color values
+                        const lightColor = hexToRgb(variable.lightHex || variable.hex);
+                        figmaVariable.setValueForMode(lightMode.modeId, lightColor);
+                        // Set dark mode value for semantics
+                        if (variable.type === "semantic" && variable.darkHex && darkMode) {
+                            const darkColor = hexToRgb(variable.darkHex);
+                            figmaVariable.setValueForMode(darkMode.modeId, darkColor);
+                        }
+                    }
+                    catch (varError) {
+                        console.error(`Error creating variable ${variable.name}:`, varError);
+                    }
+                }
+                figma.notify(`✨ Generated ${createdCount} local variables (${primitiveCount} primitives, ${semanticCount} semantics)`);
+            }
+            catch (error) {
+                console.error("Error generating local variables:", error);
+                figma.notify("❌ Error generating variables. Check console for details.");
+            }
+            break;
+        }
+        // ─── FALLBACK ─────────────────────────────────────────────────
+        default: {
+            console.warn("Unknown message type:", type);
+            break;
+        }
+    }
+};

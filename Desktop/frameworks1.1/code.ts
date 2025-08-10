@@ -2,7 +2,7 @@
 // This file runs in Figma’s main thread
 
 // 1. Show the React UI
-figma.showUI(__html__, { width: 800, height: 600 });
+figma.showUI(__html__, { width: 600, height: 700 });
 
 // 2. Helper: convert "#rrggbb" → { r, g, b } with values in [0,1]
 function hexToRgb(hex: string): RGB {
@@ -59,6 +59,80 @@ figma.ui.onmessage = (msg) => {
         }
       }
       figma.notify("🔑 Semantics generated");
+      break;
+    }
+
+    // ─── LOCAL VARIABLES ──────────────────────────────────────────
+    case "generate-local-variables": {
+      try {
+        const { variables, totalCount, primitiveCount, semanticCount } = payload as {
+          variables: Array<{
+            name: string;
+            hex: string;
+            type: "primitive" | "semantic";
+            lightHex?: string;
+            darkHex?: string;
+          }>;
+          totalCount: number;
+          primitiveCount: number;
+          semanticCount: number;
+        };
+
+        console.log(`Generating ${totalCount} local variables (${primitiveCount} primitives, ${semanticCount} semantics)`);
+
+        // Create or get the main collection
+        let collection = figma.variables.getLocalVariableCollections().find(c => c.name === "Framework Colors");
+        if (!collection) {
+          collection = figma.variables.createVariableCollection("Framework Colors");
+        }
+
+        // Create light and dark modes for semantics
+        const lightMode = collection.modes.find(m => m.name === "Light") || collection.modes[0];
+        let darkMode = collection.modes.find(m => m.name === "Dark");
+        
+        if (!darkMode && semanticCount > 0) {
+          darkMode = collection.addMode("Dark");
+        }
+
+        // Update mode names
+        if (lightMode) {
+          collection.renameMode(lightMode.modeId, "Light");
+        }
+
+        let createdCount = 0;
+
+        for (const variable of variables) {
+          try {
+            // Check if variable already exists
+            const existingVariable = figma.variables.getLocalVariables().find(v => v.name === variable.name);
+            let figmaVariable = existingVariable;
+
+            if (!figmaVariable) {
+              figmaVariable = figma.variables.createVariable(variable.name, collection, "COLOR");
+              createdCount++;
+            }
+
+            // Set the color values
+            const lightColor = hexToRgb(variable.lightHex || variable.hex);
+            figmaVariable.setValueForMode(lightMode.modeId, lightColor);
+
+            // Set dark mode value for semantics
+            if (variable.type === "semantic" && variable.darkHex && darkMode) {
+              const darkColor = hexToRgb(variable.darkHex);
+              figmaVariable.setValueForMode(darkMode.modeId, darkColor);
+            }
+
+          } catch (varError) {
+            console.error(`Error creating variable ${variable.name}:`, varError);
+          }
+        }
+
+        figma.notify(`✨ Generated ${createdCount} local variables (${primitiveCount} primitives, ${semanticCount} semantics)`);
+        
+      } catch (error) {
+        console.error("Error generating local variables:", error);
+        figma.notify("❌ Error generating variables. Check console for details.");
+      }
       break;
     }
 

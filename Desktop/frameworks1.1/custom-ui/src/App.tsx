@@ -3,43 +3,51 @@ import React, { useState, useEffect } from "react";
 import ColorsView from "./views/ColorsView";
 import SpacingView from "./views/SpacingView";
 import TypographyView from "./views/TypographyView";
-import ThemeToggle from "./components/ThemeToggle";
 
 const AboutView = () => (
-  <div className="p-6 text-gray-700 dark:text-gray-200 text-sm">
-    ℹ️ Framework plugin to generate design tokens and system views.
+  <div className="p-6 text-gray-700 dark:text-gray-200 text-sm space-y-4">
+    <div className="text-center">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Design Tokens</h1>
+      <p className="text-gray-600 dark:text-gray-400">Generate CSS variables from Figma designs</p>
+    </div>
+    
+    <div className="space-y-3">
+      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <h3 className="font-medium text-gray-900 dark:text-white mb-2">🎨 Colors</h3>
+        <p className="text-gray-600 dark:text-gray-400">Extract color palettes with semantic naming</p>
+      </div>
+      
+      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <h3 className="font-medium text-gray-900 dark:text-white mb-2">📏 Spacing</h3>
+        <p className="text-gray-600 dark:text-gray-400">Generate consistent spacing scales</p>
+      </div>
+      
+      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <h3 className="font-medium text-gray-900 dark:text-white mb-2">🔤 Typography</h3>
+        <p className="text-gray-600 dark:text-gray-400">Create font systems with size, weight, and line-height</p>
+      </div>
+    </div>
+    
+    <div className="text-center text-xs text-gray-500 dark:text-gray-500 pt-4">
+      Copy tokens to clipboard and paste into your code
+    </div>
   </div>
 );
 
-type MainView = "collections" | "about";
+const SettingsView = () => (
+  <div className="p-6 text-gray-700 dark:text-gray-200 text-sm">
+    ⚙️ Settings and configuration options.
+  </div>
+);
+
+type MainView = "variables" | "about" | "settings";
 type SubView = "colors" | "spacing" | "typography";
 
 export default function App() {
-  const [mainView, setMainView] = useState<MainView>("collections");
+  const [mainView, setMainView] = useState<MainView>("variables");
   const [activeSubView, setActiveSubView] = useState<SubView>("colors");
   const [searchQuery, setSearchQuery] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Hydrate initial theme from localStorage (if available)
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("theme");
-      if (stored === "dark") setTheme("dark");
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
-  // Toggle `dark` class on <html> and persist
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-
-    try {
-      window.localStorage.setItem("theme", theme);
-    } catch {}
-  }, [theme]);
 
   const renderSubView = () => {
     switch (activeSubView) {
@@ -53,110 +61,111 @@ export default function App() {
   };
 
   return (
-    <div className="min-w-[1000px] min-h-[700px] max-w-[100vw] max-h-[100vh] font-sans text-sm overflow-hidden flex flex-col">
-      {/* Global Navigation + Theme Toggle */}
-      <div className="flex items-center gap-2 border-b p-2 bg-white dark:bg-gray-800 shadow-sm">
+    <div className="w-full max-w-[600px] min-h-[700px] max-h-[100vh] font-sans text-sm overflow-hidden flex flex-col">
+      {/* Top Navigation */}
+      <nav className="flex items-center gap-1 border-b pl-[2px] pr-4 bg-white dark:bg-gray-800 shadow-sm" style={{height: '48px', minHeight: '48px', maxHeight: '48px'}}>
         <button
           onClick={() => {
-            setMainView("collections");
+            setMainView("variables");
             setActiveSubView("colors");
             setSearchQuery("");
           }}
-          className={`px-3 py-1 rounded text-sm ${
-            mainView === "collections"
-              ? "bg-black text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          className={`px-3 py-1 rounded text-xs transition-colors ${
+            mainView === "variables"
+              ? "text-black dark:text-white font-medium"
+              : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
-          Collections
+          Variables
         </button>
         <button
           onClick={() => {
             setMainView("about");
             setSearchQuery("");
           }}
-          className={`px-3 py-1 rounded text-sm ${
+          className={`px-3 py-1 rounded text-xs transition-colors ${
             mainView === "about"
-              ? "bg-black text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              ? "text-black dark:text-white font-medium"
+              : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
           About
         </button>
-        <div className="ml-auto">
-          <ThemeToggle theme={theme} setTheme={setTheme} />
-        </div>
-      </div>
+        <button
+          onClick={() => {
+            setMainView("settings");
+            setSearchQuery("");
+          }}
+          className={`px-3 py-1 rounded text-xs transition-colors ${
+            mainView === "settings"
+              ? "text-black dark:text-white font-medium"
+              : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
+          }`}
+        >
+          Settings
+        </button>
+      </nav>
 
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {mainView === "collections" && (
-          <div className="w-72 shrink-0 bg-white dark:bg-gray-800 border-r dark:border-gray-700 p-4 flex flex-col gap-2">
+        {mainView === "variables" && (
+          <div className="w-32 shrink-0 bg-gray-100 dark:bg-gray-900 border-r dark:border-gray-700 p-2 flex flex-col gap-2">
             {/* Sub-nav */}
             <button
               onClick={() => {
                 setActiveSubView("colors");
                 setSearchQuery("");
               }}
-              className={`text-left px-2 py-1 rounded ${
+              className={`text-left px-1.5 py-1.5 rounded text-xs transition-colors ${
                 activeSubView === "colors"
-                  ? "bg-white font-medium border border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "text-black dark:text-white font-medium"
+                  : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
               }`}
             >
-              🎨 Colors
+              Colors
             </button>
             <button
               onClick={() => {
                 setActiveSubView("spacing");
                 setSearchQuery("");
               }}
-              className={`text-left px-2 py-1 rounded ${
+              className={`text-left px-1.5 py-1.5 rounded text-xs transition-colors ${
                 activeSubView === "spacing"
-                  ? "bg-white font-medium border border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "text-black dark:text-white font-medium"
+                  : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
               }`}
             >
-              📏 Spacing
+              Spacing
             </button>
             <button
               onClick={() => {
                 setActiveSubView("typography");
                 setSearchQuery("");
               }}
-              className={`text-left px-2 py-1 rounded ${
+              className={`text-left px-1.5 py-1.5 rounded text-xs transition-colors ${
                 activeSubView === "typography"
-                  ? "bg-white font-medium border border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "text-black dark:text-white font-medium"
+                  : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
               }`}
             >
-              🔠 Typography
+              Typography
             </button>
           </div>
         )}
 
         {/* Content Pane */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {mainView === "collections" ? (
-            <>
-              {/* Search */}
-              <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4">
-                <input
-                  type="text"
-                  placeholder={`Search ${activeSubView}`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                />
-              </div>
-              {/* Subview */}
-              <div className="flex-1 overflow-y-auto p-4">
-                {renderSubView()}
-              </div>
-            </>
-          ) : (
+          {mainView === "variables" ? (
+            <div className="flex-1 overflow-y-auto px-2 pt-2">
+              {renderSubView()}
+            </div>
+          ) : mainView === "about" ? (
             <div className="flex-1 overflow-auto">
               <AboutView />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto">
+              <SettingsView />
             </div>
           )}
         </div>
