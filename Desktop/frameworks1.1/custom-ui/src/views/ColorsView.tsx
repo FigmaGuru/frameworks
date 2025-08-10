@@ -3,20 +3,62 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import tailwindColors from "../lib/tailwind-colors.json";
 import Swatch from "../components/Swatch";
 import Accordion from "../components/accordion";
-import Alert from "../components/alert";
-import { Check } from "lucide-react";
 
-const semanticPresets: Record<string, Record<string, string>> = {
-  Surface: { primary: "#ffffff", secondary: "#f9fafb", tertiary: "#f3f4f6", quaternary: "#e5e7eb" },
-  Text:    { primary: "#111827", secondary: "#374151", tertiary: "#6b7280", quaternary: "#9ca3af" },
-  Icon:    { primary: "#111827", secondary: "#4b5563", tertiary: "#6b7280", quaternary: "#9ca3af" },
-  Border:  { primary: "#d1d5db", secondary: "#e5e7eb", tertiary: "#f3f4f6", quaternary: "#f9fafb" },
-  Alpha:   { "white-5": "rgba(255,255,255,0.05)", /* …etc… */ "black-90": "rgba(0,0,0,0.9)" },
+
+
+const semanticPresets: Record<string, Record<string, { light: string; dark: string }>> = {
+  Surface: { 
+    primary: { light: "#ffffff", dark: "#0f1419" },
+    secondary: { light: "#f9fafb", dark: "#1a1f2e" },
+    tertiary: { light: "#f3f4f6", dark: "#252b3d" },
+    quaternary: { light: "#e5e7eb", dark: "#2f374a" }
+  },
+  Text: { 
+    primary: { light: "#111827", dark: "#f9fafb" },
+    secondary: { light: "#374151", dark: "#d1d5db" },
+    tertiary: { light: "#6b7280", dark: "#9ca3af" },
+    quaternary: { light: "#9ca3af", dark: "#6b7280" }
+  },
+  Icon: { 
+    primary: { light: "#111827", dark: "#f3f4f6" },
+    secondary: { light: "#4b5563", dark: "#d1d5db" },
+    tertiary: { light: "#6b7280", dark: "#9ca3af" },
+    quaternary: { light: "#9ca3af", dark: "#6b7280" }
+  },
+  Border: { 
+    primary: { light: "#d1d5db", dark: "#374151" },
+    secondary: { light: "#e5e7eb", dark: "#2f374a" },
+    tertiary: { light: "#f3f4f6", dark: "#252b3d" },
+    quaternary: { light: "#f9fafb", dark: "#1a1f2e" }
+  },
+  Alpha: { 
+    "white-5": { light: "rgba(255,255,255,0.05)", dark: "rgba(255,255,255,0.05)" },
+    "white-10": { light: "rgba(255,255,255,0.1)", dark: "rgba(255,255,255,0.1)" },
+    "white-20": { light: "rgba(255,255,255,0.2)", dark: "rgba(255,255,255,0.2)" },
+    "black-5": { light: "rgba(0,0,0,0.05)", dark: "rgba(0,0,0,0.05)" },
+    "black-10": { light: "rgba(0,0,0,0.1)", dark: "rgba(0,0,0,0.1)" },
+    "black-20": { light: "rgba(0,0,0,0.2)", dark: "rgba(0,0,0,0.2)" },
+    "black-90": { light: "rgba(0,0,0,0.9)", dark: "rgba(0,0,0,0.9)" }
+  },
+  "States & Interaction": {
+    "hover": { light: "#f3f4f6", dark: "#374151" },
+    "focus": { light: "#dbeafe", dark: "#1e40af" },
+    "active": { light: "#e5e7eb", dark: "#4b5563" },
+    "selected": { light: "#dbeafe", dark: "#1e40af" },
+    "disabled": { light: "#f9fafb", dark: "#374151" }
+  },
+  "Status / Feedback": {
+    "success": { light: "#dcfce7", dark: "#166534" },
+    "warning": { light: "#fef3c7", dark: "#92400e" },
+    "error": { light: "#fee2e2", dark: "#991b1b" },
+    "info": { light: "#dbeafe", dark: "#1e40af" }
+  },
 };
 
 export default function ColorsView({ query = "" }: { query?: string }) {
   const [activeTab, setActiveTab] = useState<"primitives" | "semantics">("primitives");
-  const [primitivesGenerated, setPrimitivesGenerated] = useState(false);
+  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
+
 
   // 1) Build primitives once
   const groupedPrimitives = useMemo(() => {
@@ -60,9 +102,6 @@ export default function ColorsView({ query = "" }: { query?: string }) {
 
   // 4) Primitive handlers
   const togglePrimitive        = (f: string) => setOpenPrimitives(p => ({ ...p, [f]: !p[f] }));
-  const changePrimitiveAlias   = (f: string, i: number, a: string) => { const c = { ...primitives }; c[f][i].alias = a; setPrimitives(c); };
-  const changePrimitiveHex     = (f: string, i: number, h: string) => { const c = { ...primitives }; c[f][i].hex = h; setPrimitives(c); };
-  const resetPrimitiveHex      = (f: string, i: number) => changePrimitiveHex(f, i, primitives[f][i].originalHex);
   const togglePrimitiveInclude = (f: string, i: number) => { const c = { ...primitives }; c[f][i].included = !c[f][i].included; setPrimitives(c); };
   const toggleFamilyInclude    = (f: string) => { const c = { ...primitives }; const all = c[f].every(i => i.included); c[f].forEach(i => i.included = !all); setPrimitives(c); };
 
@@ -80,26 +119,91 @@ export default function ColorsView({ query = "" }: { query?: string }) {
     return out;
   }, [primitives, lower]);
 
-  // 7) Generate
-  const sendPrimitives = () => {
-    const payload = Object.entries(primitives).flatMap(([family, items]) =>
-      items.filter(c => c.included).map(c => ({ family, alias: c.alias, hex: c.hex }))
-    );
-    parent.postMessage({ pluginMessage: { type: "generate-primitives", payload } }, "*");
-    setPrimitivesGenerated(true);
+  // 7) Generate function for both primitives and semantics
+  const generateVariables = () => {
+    try {
+      const variables: Array<{
+        name: string;
+        hex: string;
+        type: "primitive" | "semantic";
+        lightHex?: string;
+        darkHex?: string;
+      }> = [];
+
+      // Add included primitives
+      Object.entries(primitives).forEach(([family, items]) => {
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            if (item && item.included && item.alias && item.hex) {
+              variables.push({
+                name: item.alias,
+                hex: item.hex,
+                type: "primitive"
+              });
+            }
+          });
+        }
+      });
+
+      // Add semantic tokens (all of them)
+      Object.entries(semanticPresets).forEach(([group, colors]) => {
+        if (colors && typeof colors === 'object') {
+          Object.entries(colors).forEach(([name, colorObj]) => {
+            if (colorObj && typeof colorObj === 'object' && 'light' in colorObj && 'dark' in colorObj) {
+              variables.push({
+                name: `${group.toLowerCase()}-${name}`,
+                hex: colorObj.light, // Default to light for single hex
+                lightHex: colorObj.light,
+                darkHex: colorObj.dark,
+                type: "semantic"
+              });
+            }
+          });
+        }
+      });
+
+      console.log("Generated variables:", variables);
+
+      // Notify parent about variable generation
+      if (typeof window !== 'undefined' && window.parent) {
+        window.parent.postMessage({
+          pluginMessage: {
+            type: "generate-local-variables",
+            payload: {
+              variables,
+              totalCount: variables.length,
+              primitiveCount: variables.filter(v => v.type === "primitive").length,
+              semanticCount: variables.filter(v => v.type === "semantic").length
+            },
+          },
+        }, "*");
+      }
+    } catch (error) {
+      console.error("Error generating variables:", error);
+      // Notify parent about the error
+      if (typeof window !== 'undefined' && window.parent) {
+        window.parent.postMessage({
+          pluginMessage: {
+            type: "generation-error",
+            payload: {
+              error: error instanceof Error ? error.message : "Unknown error occurred"
+            },
+          },
+        }, "*");
+      }
+    }
   };
-  const sendSemantics = () => {
-    parent.postMessage({ pluginMessage: { type: "generate-semantics", payload: semanticPresets } }, "*");
-  };
+
+
 
   return (
     <div className="font-sans text-sm flex flex-col h-full overflow-hidden">
       {/* ── TABS + GENERATE ── */}
-      <div className="flex items-center mb-3 px-1">
+      <div className="flex items-center mb-3 gap-1 pl-[2px] mt-1">
         <button
           onClick={() => setActiveTab("primitives")}
-          className={`px-4 py-1 font-semibold ${
-            activeTab === "primitives" ? "text-black dark:text-white" : "text-gray-400 hover:text-black dark:hover:text-white"
+          className={`px-2 py-0.5 rounded text-xs transition-colors ${
+            activeTab === "primitives" ? "text-black dark:text-white font-medium" : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
           Primitives
@@ -107,29 +211,73 @@ export default function ColorsView({ query = "" }: { query?: string }) {
 
         <button
           onClick={() => setActiveTab("semantics")}
-          className={`px-4 py-1 font-semibold ${
-            activeTab === "semantics" ? "text-black dark:text-white" : "text-gray-400 hover:text-black dark:hover:text-white"
+          className={`px-2 py-0.5 rounded text-xs transition-colors ${
+            activeTab === "semantics" ? "text-black dark:text-white font-medium" : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           }`}
         >
           Semantics
         </button>
 
-        <div className="ml-auto">
+        {/* Theme toggle - only show in semantics tab */}
+        {activeTab === "semantics" && (
           <button
-            onClick={sendPrimitives}
-            className="flex items-center space-x-1 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm"
+            onClick={() => setThemeMode(themeMode === "light" ? "dark" : "light")}
+            className="ml-2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title={`Switch to ${themeMode === "light" ? "dark" : "light"} mode`}
           >
-            {primitivesGenerated ? <Check className="w-5 h-5" /> : "Generate Primitives"}
+            {themeMode === "light" ? (
+              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+              </svg>
+            )}
           </button>
+        )}
+
+        {/* Generate button with count - show in both tabs */}
+        <div className="ml-auto flex items-center gap-2">
+          {(() => {
+            const primitiveCount = Object.values(primitives).reduce((sum, items) => 
+              sum + (Array.isArray(items) ? items.filter(item => item && item.included).length : 0), 0
+            );
+            const semanticCount = Object.entries(semanticPresets).reduce((sum, [_, colors]) => 
+              sum + Object.keys(colors || {}).length, 0
+            );
+            const totalCount = primitiveCount + semanticCount;
+            
+            return (
+              <>
+
+                <button
+                  onClick={generateVariables}
+                  className="px-4 py-1 bg-black dark:bg-white text-white dark:text-black rounded text-xs hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                >
+                  Generate
+                </button>
+              </>
+            );
+          })()}
         </div>
+
       </div>
 
       {/* ── PRIMITIVES PANEL ── */}
       {activeTab === "primitives" && (
         <div className="flex-1 overflow-auto space-y-3 pr-1">
-          <Alert
-            description="Edit alias or color, then click &quot;Generate Primitives,&quot; then switch to Semantics."
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-600 dark:text-gray-400 flex items-center gap-2" style={{fontSize: '12px'}}>
+            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth="1.5"/>
+              <path d="M12 16v-4" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 8h.01" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            {(() => {
+              const totalColors = Object.values(filteredPrimitives).reduce((sum, items) => sum + items.length, 0);
+              return `Tailwind CSS color primitives (${totalColors} colors available).`;
+            })()}
+          </div>
           {Object.entries(filteredPrimitives).map(([family, items]) => {
             const all = items.every(i => i.included);
             return (
@@ -141,7 +289,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                 isOpen={!!openPrimitives[family]}
                 onToggle={() => togglePrimitive(family)}
               >
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+                <div className="flex flex-wrap gap-1.5 p-4">
                   {items.map((item, idx) => (
                     <Swatch
                       key={`${family}-${idx}`}
@@ -149,10 +297,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                       originalHex={item.originalHex}
                       alias={item.alias}
                       included={item.included}
-                      onHexChange={h => changePrimitiveHex(family, idx, h)}
-                      onAliasChange={a => changePrimitiveAlias(family, idx, a)}
                       onToggleIncluded={() => togglePrimitiveInclude(family, idx)}
-                      onReset={() => resetPrimitiveHex(family, idx)}
                     />
                   ))}
                 </div>
@@ -175,20 +320,27 @@ export default function ColorsView({ query = "" }: { query?: string }) {
               isOpen={!!openSemantics[group]}
               onToggle={() => toggleSemantic(group)}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
-                {Object.entries(map).map(([name, hex]) => (
-                  <Swatch
-                    key={`${group}-${name}`}
-                    hex={hex}
-                    originalHex={hex}
-                    alias={`${group.toLowerCase()}-${name}`}
-                    included
-                    onHexChange={() => {}}
-                    onAliasChange={() => {}}
-                    onToggleIncluded={() => {}}
-                    onReset={() => {}}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-1.5 p-4">
+                {Object.entries(map).map(([name, colorObj]) => {
+                  // Type safety check
+                  if (!colorObj || typeof colorObj !== 'object' || !('light' in colorObj) || !('dark' in colorObj)) {
+                    return null;
+                  }
+                  
+                  const currentHex = themeMode === 'light' ? colorObj.light : colorObj.dark;
+                  
+                  return (
+                    <Swatch
+                      key={`${group}-${name}`}
+                      hex={currentHex}
+                      originalHex={currentHex}
+                      alias={`${group.toLowerCase()}-${name}`}
+                      themeMode={themeMode}
+                      included
+                      onToggleIncluded={() => {}}
+                    />
+                  );
+                })}
               </div>
             </Accordion>
           ))}
@@ -203,7 +355,7 @@ export default function ColorsView({ query = "" }: { query?: string }) {
               isOpen={!!openSemantics[family]}
               onToggle={() => toggleSemantic(family)}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+              <div className="flex flex-wrap gap-1.5 p-4">
                 {items.map((item, idx) => (
                   <Swatch
                     key={`sem-prim-${family}-${idx}`}
@@ -211,28 +363,14 @@ export default function ColorsView({ query = "" }: { query?: string }) {
                     originalHex={item.originalHex}
                     alias={item.alias}
                     included={item.included}
-                    onHexChange={h => changePrimitiveHex(family, idx, h)}
-                    onAliasChange={a => changePrimitiveAlias(family, idx, a)}
                     onToggleIncluded={() => togglePrimitiveInclude(family, idx)}
-                    onReset={() => resetPrimitiveHex(family, idx)}
                   />
                 ))}
               </div>
             </Accordion>
           ))}
 
-          <button
-            onClick={sendSemantics}
-            disabled={!primitivesGenerated}
-            title={!primitivesGenerated ? "Generate Primitives first" : ""}
-            className={`mt-4 w-full px-4 py-2 rounded text-sm ${
-              primitivesGenerated
-                ? "bg-black text-white hover:bg-gray-800"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {primitivesGenerated ? <Check className="w-5 h-5" /> : "Generate Semantics"}
-          </button>
+``
         </div>
       )}
     </div>

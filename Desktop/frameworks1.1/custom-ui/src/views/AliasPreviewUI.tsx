@@ -86,7 +86,7 @@ export default function AliasPreviewUI() {
               <div className="relative w-2/3 flex items-center gap-2">
                 {/* Color swatch */}
                 <div
-                  className="w-4 h-4 rounded border"
+                  className="w-4 h-4 rounded shadow-md"
                   style={{
                     backgroundColor:
                       primitiveColorMap[item.primitiveName] || "#eee",
