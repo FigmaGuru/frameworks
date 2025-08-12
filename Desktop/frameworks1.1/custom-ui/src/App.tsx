@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import ColorsView from "./views/ColorsView";
 import SpacingView from "./views/SpacingView";
 import TypographyView from "./views/TypographyView";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const AboutView = () => (
   <div className="p-6 text-gray-700 dark:text-gray-200 text-sm space-y-4">
@@ -61,9 +62,10 @@ export default function App() {
   };
 
   return (
-    <div className="w-full max-w-[600px] min-h-[700px] max-h-[100vh] font-sans text-sm overflow-hidden flex flex-col">
-      {/* Top Navigation */}
-      <nav className="flex items-center gap-1 border-b pl-[2px] pr-4 bg-white dark:bg-gray-800 shadow-sm" style={{height: '48px', minHeight: '48px', maxHeight: '48px'}}>
+    <ErrorBoundary>
+      <div className="w-full max-w-[600px] min-h-[700px] max-h-[100vh] font-sans text-sm overflow-hidden flex flex-col">
+        {/* Top Navigation */}
+        <nav className="flex items-center gap-1 border-b pl-[2px] pr-4 bg-white dark:bg-gray-800 shadow-sm" style={{height: '48px', minHeight: '48px', maxHeight: '48px'}}>
         <button
           onClick={() => {
             setMainView("variables");
@@ -170,6 +172,7 @@ export default function App() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
